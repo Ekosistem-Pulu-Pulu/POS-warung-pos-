@@ -8,9 +8,9 @@ const InputTransaksi = () => {
   const [items, setItems] = useState([]); // Cart items
   const [products, setProducts] = useState([]); // Products from API
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
-  
-  // Masih butuh userID untuk dikirim ke backend, kita pakai dummy dulu atau input text kecil
-  const [userId, setUserId] = useState('USR-001');
+  // Generate ID Customer dinamis
+  const generateId = () => `CUST-${Math.floor(1000 + Math.random() * 9000)}`;
+  const [userId, setUserId] = useState(generateId());
 
   // Ambil daftar produk dari backend
   useEffect(() => {
