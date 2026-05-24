@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { NavLink } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 import { 
   LayoutDashboard, 
   ShoppingCart, 
@@ -9,21 +10,27 @@ import {
   PieChart, 
   CreditCard,
   Building,
+  Users,
+  MonitorPlay,
   Menu,
   X
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
+  const { user } = useContext(AuthContext);
+  const role = user?.role || 'kasir';
+
   const menuItems = [
-    { path: '/dashboard', name: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-    { path: '/transaksi/input', name: 'Input Transaksi', icon: <ShoppingCart size={20} /> },
-    { path: '/transaksi/tagihan', name: 'Generate Tagihan', icon: <Receipt size={20} /> },
-    { path: '/transaksi/riwayat', name: 'Riwayat Transaksi', icon: <History size={20} /> },
-    { path: '/transaksi/payment-request', name: 'Payment Request', icon: <CreditCard size={20} /> },
-    { path: '/biaya-layanan', name: 'Biaya Layanan POS', icon: <Banknote size={20} /> },
-    { path: '/smartbank-status', name: 'SmartBank Status', icon: <Building size={20} /> },
-    { path: '/analytics', name: 'Analytics', icon: <PieChart size={20} /> },
-  ];
+    { path: '/dashboard', name: 'Dashboard', icon: <LayoutDashboard size={20} />, roles: ['owner', 'kasir', 'gudang'] },
+    { path: '/transaksi/input', name: 'Input Transaksi', icon: <ShoppingCart size={20} />, roles: ['owner', 'kasir'] },
+    { path: '/transaksi/tagihan', name: 'Generate Tagihan', icon: <Receipt size={20} />, roles: ['owner', 'kasir'] },
+    { path: '/transaksi/riwayat', name: 'Riwayat Transaksi', icon: <History size={20} />, roles: ['owner', 'kasir'] },
+    { path: '/transaksi/payment-request', name: 'Payment Request', icon: <CreditCard size={20} />, roles: ['owner', 'kasir'] },
+    { path: '/biaya-layanan', name: 'Biaya Layanan POS', icon: <Banknote size={20} />, roles: ['owner', 'kasir', 'gudang'] },
+    { path: '/smartbank-status', name: 'SmartBank Status', icon: <Building size={20} />, roles: ['owner'] },
+    { path: '/analytics', name: 'Analytics', icon: <PieChart size={20} />, roles: ['owner'] },
+    { path: '/user-management', name: 'Manajemen User', icon: <Users size={20} />, roles: ['owner'] },
+  ].filter(item => item.roles.includes(role));
 
   return (
     <>
@@ -80,8 +87,20 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         </div>
         
         {/* Footer Area */}
-        <div className="p-4 border-t border-gray-100 text-xs text-center text-gray-500">
-          WarungPOS v1.0.0
+        <div className="p-4 border-t border-gray-100 flex flex-col gap-3">
+          {['owner', 'kasir'].includes(role) && (
+            <a 
+              href="/customer" 
+              target="_blank" 
+              rel="noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-sm font-medium transition-colors border border-blue-100"
+            >
+              <MonitorPlay size={16} /> Layar Pelanggan
+            </a>
+          )}
+          <div className="text-xs text-center text-gray-500">
+            WarungPOS v1.0.0
+          </div>
         </div>
       </aside>
     </>

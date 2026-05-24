@@ -27,6 +27,20 @@ const PaymentRequest = () => {
       // Clear data if success
       if (isSuccess) {
         localStorage.removeItem('currentTransaction');
+        
+        // Broadcast paid status to customer display
+        const liveCartStr = localStorage.getItem('pos_live_cart');
+        if (liveCartStr) {
+          try {
+            const liveCart = JSON.parse(liveCartStr);
+            liveCart.status = 'paid';
+            localStorage.setItem('pos_live_cart', JSON.stringify(liveCart));
+            window.dispatchEvent(new Event('local-storage-update'));
+          } catch (e) {
+            console.error('Failed to update live cart on success', e);
+          }
+        }
+        
         localStorage.removeItem('paymentPayload');
       }
     }, 3000);

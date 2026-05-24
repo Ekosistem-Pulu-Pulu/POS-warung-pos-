@@ -1,22 +1,30 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, Mail, Lock, LogIn } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const { login } = useContext(AuthContext);
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
     
-    // Simulate login API call
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 1500);
+    try {
+      await login(identifier, password);
+      navigate('/dashboard', { replace: true });
+    } catch (err) {
+      setError(err.response?.data?.message || 'Gagal login. Periksa kembali email/username dan password Anda.');
+      setIsLoading(false);
+    }
   };
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 relative overflow-hidden">
@@ -34,6 +42,11 @@ const Login = () => {
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">
+          {error && (
+            <div className="p-3 bg-red-100 text-red-700 rounded-xl text-sm text-center">
+              {error}
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email / Username</label>
             <div className="relative">
@@ -43,10 +56,10 @@ const Login = () => {
               <input 
                 type="text" 
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder-gray-400 text-gray-800"
-                placeholder="admin@warungpos.com"
+                placeholder="email atau username"
               />
             </div>
           </div>

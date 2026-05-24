@@ -1,10 +1,14 @@
+import { useContext } from 'react';
 import { Bell, Search, User, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 
 const Header = ({ setIsSidebarOpen }) => {
   const navigate = useNavigate();
+  const { user, logout } = useContext(AuthContext);
 
   const handleLogout = () => {
+    logout();
     navigate('/login');
   };
 
@@ -41,8 +45,12 @@ const Header = ({ setIsSidebarOpen }) => {
             <User size={18} className="text-blue-600" />
           </div>
           <div className="hidden sm:block">
-            <p className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">Kasir Admin</p>
-            <p className="text-xs text-gray-500">Cabang Utama</p>
+            <p className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">
+              {user?.name || 'Kasir Admin'}
+            </p>
+            <p className="text-xs text-gray-500 capitalize">
+              {user?.role || 'Cabang Utama'}
+            </p>
           </div>
         </div>
 

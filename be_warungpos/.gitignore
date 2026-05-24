@@ -1,0 +1,35 @@
+# ===========================
+# Environment & Secrets
+# ===========================
+.env
+.env.local
+.env.*.local
+
+# ===========================
+# Go Build Output
+# ===========================
+# Binary hasil build
+be_warungpos
+be_warungpos.exe
+*.exe
+*.out
+
+# Go test cache
+*.test
+*.prof
+
+# ===========================
+# IDE & Editor
+# ===========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===========================
+# OS Files
+# ===========================
+.DS_Store
+Thumbs.db
+desktop.ini
