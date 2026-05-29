@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, XCircle, Loader2, ArrowRight, Home } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Home } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const PaymentRequest = () => {
   const navigate = useNavigate();
@@ -11,7 +12,6 @@ const PaymentRequest = () => {
     const data = localStorage.getItem('paymentPayload');
     if (data) {
       setPaymentData(JSON.parse(data));
-      // Simulate payment processing via Gateway API
       simulatePayment();
     } else {
       navigate('/transaksi/input');
@@ -24,7 +24,6 @@ const PaymentRequest = () => {
       const isSuccess = Math.random() > 0.2;
       setStatus(isSuccess ? 'success' : 'failed');
       
-      // Clear data if success
       if (isSuccess) {
         localStorage.removeItem('currentTransaction');
         
@@ -49,79 +48,103 @@ const PaymentRequest = () => {
   if (!paymentData) return null;
 
   return (
-    <div className="max-w-xl mx-auto mt-10">
-      <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-lg text-center relative overflow-hidden">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      className="max-w-xl mx-auto mt-10 p-4"
+    >
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none text-center relative overflow-hidden transition-colors duration-300">
         
         {/* Background Decorative */}
-        <div className={`absolute top-0 left-0 w-full h-2 
+        <div className={`absolute top-0 left-0 w-full h-2 transition-colors duration-500
           ${status === 'processing' ? 'bg-blue-500 animate-pulse' : 
-            status === 'success' ? 'bg-green-500' : 'bg-red-500'}
+            status === 'success' ? 'bg-emerald-500' : 'bg-red-500'}
         `} />
 
         <div className="mb-6 flex justify-center">
-          {status === 'processing' && (
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full border-4 border-blue-50 border-t-blue-500 animate-spin"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Loader2 className="text-blue-500 animate-spin" size={32} />
-              </div>
-            </div>
-          )}
-          {status === 'success' && (
-            <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center animate-bounce-short">
-              <CheckCircle2 className="text-green-500" size={48} />
-            </div>
-          )}
-          {status === 'failed' && (
-            <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center animate-shake">
-              <XCircle className="text-red-500" size={48} />
-            </div>
-          )}
+          <AnimatePresence mode="wait">
+            {status === 'processing' && (
+              <motion.div 
+                key="processing"
+                initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
+                className="relative"
+              >
+                <div className="w-24 h-24 rounded-full border-4 border-blue-50 dark:border-blue-900/30 border-t-blue-500 animate-spin"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Loader2 className="text-blue-500 animate-spin" size={32} />
+                </div>
+              </motion.div>
+            )}
+            {status === 'success' && (
+              <motion.div 
+                key="success"
+                initial={{ scale: 0.5, opacity: 0, rotate: -10 }} animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                transition={{ type: "spring", bounce: 0.5 }}
+                className="w-24 h-24 bg-emerald-50 dark:bg-emerald-900/30 rounded-full flex items-center justify-center"
+              >
+                <CheckCircle2 className="text-emerald-500 dark:text-emerald-400" size={48} />
+              </motion.div>
+            )}
+            {status === 'failed' && (
+              <motion.div 
+                key="failed"
+                initial={{ scale: 0.5, opacity: 0, x: -10 }} animate={{ scale: 1, opacity: 1, x: 0 }}
+                transition={{ type: "spring", bounce: 0.6 }}
+                className="w-24 h-24 bg-red-50 dark:bg-red-900/30 rounded-full flex items-center justify-center animate-shake"
+              >
+                <XCircle className="text-red-500 dark:text-red-400" size={48} />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">
           {status === 'processing' ? 'Memproses Pembayaran...' : 
            status === 'success' ? 'Pembayaran Berhasil!' : 
            'Pembayaran Gagal'}
         </h2>
         
-        <p className="text-gray-500 mb-8">
-          {status === 'processing' ? 'Menunggu konfirmasi dari SmartBank API Gateway' : 
-           status === 'success' ? 'Transaksi telah berhasil diproses melalui SmartBank' : 
+        <p className="text-slate-500 dark:text-slate-400 mb-8 font-medium">
+          {status === 'processing' ? 'Menunggu konfirmasi dari SmartBank API Gateway.' : 
+           status === 'success' ? 'Transaksi telah berhasil diproses melalui SmartBank.' : 
            'Terjadi kesalahan saat memproses pembayaran atau saldo tidak cukup.'}
         </p>
 
-        <div className="bg-gray-50 rounded-2xl p-6 text-left mb-8">
-          <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-200">
-            <span className="text-gray-500 text-sm">Invoice</span>
-            <span className="font-semibold text-gray-800">{paymentData.invoice}</span>
+        <motion.div 
+          layout
+          className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 text-left mb-8 border border-slate-100 dark:border-slate-800"
+        >
+          <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+            <span className="text-slate-500 dark:text-slate-400 text-sm font-semibold">Invoice</span>
+            <span className="font-bold text-slate-800 dark:text-slate-200">{paymentData.invoice}</span>
           </div>
-          <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-200">
-            <span className="text-gray-500 text-sm">Customer</span>
-            <span className="font-semibold text-gray-800">{paymentData.userId}</span>
+          <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+            <span className="text-slate-500 dark:text-slate-400 text-sm font-semibold">Customer</span>
+            <span className="font-bold text-slate-800 dark:text-slate-200">{paymentData.userId}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-gray-600 font-medium">Total Dibayar</span>
-            <span className="text-xl font-bold text-blue-600">Rp {paymentData.totalPembayaran.toLocaleString('id-ID')}</span>
+            <span className="text-slate-600 dark:text-slate-300 font-bold">Total Dibayar</span>
+            <span className="text-xl font-black text-blue-600 dark:text-blue-400 tracking-tight">Rp {paymentData.totalPembayaran.toLocaleString('id-ID')}</span>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
           {status === 'processing' ? (
-             <div className="w-full py-3 bg-gray-100 text-gray-400 font-medium rounded-xl cursor-not-allowed">
+             <div className="w-full py-3 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold rounded-xl cursor-not-allowed border border-transparent">
                Harap Tunggu...
              </div>
           ) : status === 'success' ? (
             <>
               <button 
                 onClick={() => navigate('/transaksi/input')}
-                className="flex-1 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+                className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 active:scale-95"
               >
                 Transaksi Baru
               </button>
               <button 
                 onClick={() => navigate('/dashboard')}
-                className="flex-1 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors flex justify-center items-center gap-2"
+                className="flex-1 py-3 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex justify-center items-center gap-2 active:scale-95"
               >
                 <Home size={18} />
                 Dashboard
@@ -131,13 +154,13 @@ const PaymentRequest = () => {
             <>
               <button 
                 onClick={() => setStatus('processing') || simulatePayment()}
-                className="flex-1 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+                className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 active:scale-95"
               >
                 Coba Lagi
               </button>
               <button 
                 onClick={() => navigate('/transaksi/tagihan')}
-                className="flex-1 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                className="flex-1 py-3 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors active:scale-95"
               >
                 Kembali ke Tagihan
               </button>
@@ -147,13 +170,6 @@ const PaymentRequest = () => {
       </div>
       
       <style dangerouslySetInnerHTML={{__html: `
-        @keyframes bounce-short {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-15%); }
-        }
-        .animate-bounce-short {
-          animation: bounce-short 1s ease-in-out 1;
-        }
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
           25% { transform: translateX(-5px); }
@@ -164,7 +180,7 @@ const PaymentRequest = () => {
           animation: shake 0.5s ease-in-out;
         }
       `}} />
-    </div>
+    </motion.div>
   );
 };
 

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Receipt, CheckCircle, ArrowRight, FileText, CreditCard } from 'lucide-react';
+import { WorkspaceContext } from '../context/WorkspaceContext';
 import axios from 'axios';
 
 const GenerateTagihan = () => {
@@ -8,6 +9,8 @@ const GenerateTagihan = () => {
   const [trxData, setTrxData] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState('');
+  
+  const { addTransaction } = useContext(WorkspaceContext);
 
   useEffect(() => {
     const data = localStorage.getItem('currentTransaction');
@@ -49,6 +52,10 @@ const GenerateTagihan = () => {
       };
       
       localStorage.setItem('paymentPayload', JSON.stringify(payload));
+      
+      // Update shared frontend store (Analytics, Dashboard, Riwayat)
+      addTransaction(payload);
+      
       navigate('/transaksi/payment-request');
       
     } catch (error) {
@@ -60,15 +67,15 @@ const GenerateTagihan = () => {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center gap-4 text-sm font-medium text-gray-500 mb-2">
+      <div className="flex items-center gap-4 text-sm font-medium text-gray-500 dark:text-slate-400 mb-2">
         <span className="flex items-center gap-1"><CheckCircle size={16} className="text-green-500" /> Input</span>
         <ArrowRight size={16} />
-        <span className="text-blue-600 font-bold">Review & Tagihan</span>
+        <span className="text-blue-600 dark:text-blue-400 font-bold">Review & Tagihan</span>
         <ArrowRight size={16} />
         <span>Payment</span>
       </div>
 
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
         {/* Header Invoice */}
         <div className="bg-blue-600 p-8 text-white flex justify-between items-start">
           <div>
@@ -87,75 +94,77 @@ const GenerateTagihan = () => {
 
         {/* Body Invoice */}
         <div className="p-8">
-          <div className="mb-6 pb-6 border-b border-gray-100">
-            <p className="text-sm text-gray-500 mb-1">Ditagihkan Kepada:</p>
-            <p className="font-semibold text-gray-800 text-lg">{trxData.userId}</p>
+          <div className="mb-6 pb-6 border-b border-gray-100 dark:border-slate-800">
+            <p className="text-sm text-gray-500 dark:text-slate-400 mb-1">Ditagihkan Kepada:</p>
+            <p className="font-semibold text-gray-800 dark:text-slate-200 text-lg">{trxData.userId}</p>
           </div>
 
-          <table className="w-full text-left mb-8">
-            <thead>
-              <tr className="text-gray-500 text-sm border-b border-gray-200">
-                <th className="pb-3 font-medium">Deskripsi Item</th>
-                <th className="pb-3 font-medium text-center">Qty</th>
-                <th className="pb-3 font-medium text-right">Harga</th>
-                <th className="pb-3 font-medium text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody className="text-gray-700">
-              {trxData.items.map((item, idx) => (
-                <tr key={idx} className="border-b border-gray-50">
-                  <td className="py-4">
-                    <p className="font-medium text-gray-800">{item.namaBarang}</p>
-                  </td>
-                  <td className="py-4 text-center">{item.qty}</td>
-                  <td className="py-4 text-right">Rp {item.harga.toLocaleString('id-ID')}</td>
-                  <td className="py-4 text-right font-medium">Rp {item.total.toLocaleString('id-ID')}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left mb-8 min-w-[500px]">
+              <thead>
+                <tr className="text-gray-500 dark:text-slate-400 text-sm border-b border-gray-200 dark:border-slate-800">
+                  <th className="pb-3 font-medium">Deskripsi Item</th>
+                  <th className="pb-3 font-medium text-center">Qty</th>
+                  <th className="pb-3 font-medium text-right">Harga</th>
+                  <th className="pb-3 font-medium text-right">Total</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="text-gray-700 dark:text-slate-300">
+                {trxData.items.map((item, idx) => (
+                  <tr key={idx} className="border-b border-gray-50 dark:border-slate-800/50">
+                    <td className="py-4">
+                      <p className="font-medium text-gray-800 dark:text-slate-200">{item.namaBarang}</p>
+                    </td>
+                    <td className="py-4 text-center">{item.qty}</td>
+                    <td className="py-4 text-right">Rp {item.harga.toLocaleString('id-ID')}</td>
+                    <td className="py-4 text-right font-medium">Rp {item.total.toLocaleString('id-ID')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           <div className="flex justify-end">
             <div className="w-full sm:w-2/3 lg:w-1/2 space-y-3">
-              <div className="flex justify-between text-sm text-gray-600">
+              <div className="flex justify-between text-sm text-gray-600 dark:text-slate-400">
                 <span>Subtotal Items</span>
-                <span className="font-medium text-gray-800">Rp {subtotal.toLocaleString('id-ID')}</span>
+                <span className="font-medium text-gray-800 dark:text-slate-200">Rp {subtotal.toLocaleString('id-ID')}</span>
               </div>
-              <div className="flex justify-between text-sm text-gray-600">
+              <div className="flex justify-between text-sm text-gray-600 dark:text-slate-400">
                 <span>Fee POS (1%)</span>
                 <span>Rp {feePos.toLocaleString('id-ID')}</span>
               </div>
-              <div className="flex justify-between text-sm text-gray-600">
+              <div className="flex justify-between text-sm text-gray-600 dark:text-slate-400">
                 <span>Fee Gateway SmartBank (0.5%)</span>
                 <span>Rp {feeGateway.toLocaleString('id-ID')}</span>
               </div>
-              <div className="flex justify-between text-sm text-gray-600">
+              <div className="flex justify-between text-sm text-gray-600 dark:text-slate-400">
                 <span>Fee Bank (1%)</span>
                 <span>Rp {feeBank.toLocaleString('id-ID')}</span>
               </div>
-              <div className="flex justify-between text-sm text-gray-600">
+              <div className="flex justify-between text-sm text-gray-600 dark:text-slate-400">
                 <span>Pajak Sistem (2%)</span>
                 <span>Rp {pajakSistem.toLocaleString('id-ID')}</span>
               </div>
               
-              <div className="pt-4 border-t border-gray-200 mt-4 flex justify-between items-center bg-gray-50 p-4 rounded-xl">
-                <span className="text-gray-700 font-bold">Total Tagihan</span>
-                <span className="text-2xl font-bold text-blue-600">Rp {totalPembayaran.toLocaleString('id-ID')}</span>
+              <div className="pt-4 border-t border-gray-200 dark:border-slate-700 mt-4 flex justify-between items-center bg-gray-50 dark:bg-slate-800 p-4 rounded-xl">
+                <span className="text-gray-700 dark:text-slate-300 font-bold">Total Tagihan</span>
+                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">Rp {totalPembayaran.toLocaleString('id-ID')}</span>
               </div>
             </div>
           </div>
 
-          <div className="mt-10 flex gap-4">
+          <div className="mt-10 flex flex-col sm:flex-row gap-4">
             <button 
               onClick={() => navigate('/transaksi/input')}
-              className="px-6 py-3 border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition-colors flex-1 text-center"
+              className="px-6 py-3 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors flex-1 text-center"
             >
               Batal
             </button>
             <button 
               onClick={handleKirimPaymentRequest}
               disabled={isProcessing}
-              className={`px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 flex-[2] flex justify-center items-center gap-2
+              className={`px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 flex-[2] flex justify-center items-center gap-2
                 ${isProcessing ? 'opacity-75 cursor-not-allowed' : ''}
               `}
             >

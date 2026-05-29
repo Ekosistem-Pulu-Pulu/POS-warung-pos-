@@ -1,11 +1,13 @@
+import { useContext } from 'react';
 import { 
   DollarSign, 
   ShoppingCart, 
-  TrendingUp, 
   Activity,
   ArrowUpRight,
-  CreditCard,
-  Building
+  ArrowDownRight,
+  MoreHorizontal,
+  Users,
+  RefreshCcw
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -14,168 +16,225 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer,
-  BarChart,
-  Bar
+  ResponsiveContainer
 } from 'recharts';
+import { WorkspaceContext } from '../context/WorkspaceContext';
+import { motion } from 'framer-motion';
 
-const data = [
-  { name: 'Sen', total: 4000 },
-  { name: 'Sel', total: 3000 },
-  { name: 'Rab', total: 2000 },
-  { name: 'Kam', total: 2780 },
-  { name: 'Jum', total: 1890 },
-  { name: 'Sab', total: 2390 },
-  { name: 'Min', total: 3490 },
-];
+// --- Framer Motion Variants ---
+const containerVariants = {
+  initial: {},
+  animate: {
+    transition: { staggerChildren: 0.08 }
+  }
+};
 
-const recentTransactions = [
-  { id: 'INV-001', time: '10:42', amount: 150000, status: 'Sukses', method: 'Qris' },
-  { id: 'INV-002', time: '11:15', amount: 45000, status: 'Sukses', method: 'Cash' },
-  { id: 'INV-003', time: '12:05', amount: 210000, status: 'Pending', method: 'Transfer' },
-  { id: 'INV-004', time: '13:30', amount: 75000, status: 'Sukses', method: 'Qris' },
-  { id: 'INV-005', time: '14:20', amount: 320000, status: 'Gagal', method: 'Card' },
-];
+const itemVariants = {
+  initial: { opacity: 0, y: 15, filter: 'blur(2px)' },
+  animate: { 
+    opacity: 1, 
+    y: 0, 
+    filter: 'blur(0px)',
+    transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } 
+  }
+};
 
-const StatCard = ({ title, value, icon: Icon, trend, colorClass, bgClass }) => (
-  <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-    <div className="flex items-center justify-between">
-      <div className={`w-12 h-12 rounded-full ${bgClass} flex items-center justify-center`}>
-        <Icon className={colorClass} size={24} />
+const StatCard = ({ title, value, icon: Icon, trend, trendValue, colorClass, bgClass }) => (
+  <motion.div 
+    variants={itemVariants}
+    whileHover={{ y: -4, scale: 1.01 }}
+    transition={{ duration: 0.2, ease: "easeOut" }}
+    className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm shadow-slate-200/50 dark:shadow-none relative overflow-hidden group hover:border-blue-200 dark:hover:border-blue-800 transition-colors"
+  >
+    <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition-opacity ${bgClass} dark:opacity-10 dark:group-hover:opacity-20`}></div>
+    
+    <div className="flex items-center justify-between mb-4">
+      <h3 className="text-slate-500 dark:text-slate-400 text-sm font-semibold tracking-wide">{title}</h3>
+      <div className={`w-10 h-10 rounded-xl ${bgClass} dark:bg-slate-800 flex items-center justify-center transition-transform group-hover:scale-110 duration-300`}>
+        <Icon className={`${colorClass} dark:text-opacity-80`} size={20} />
       </div>
-      {trend && (
-        <span className={`flex items-center text-sm font-medium ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
-          {trend > 0 ? '+' : ''}{trend}%
-          <ArrowUpRight size={16} className={trend < 0 ? 'rotate-90' : ''} />
-        </span>
-      )}
     </div>
-    <div className="mt-4">
-      <h3 className="text-gray-500 text-sm font-medium">{title}</h3>
-      <p className="text-2xl font-bold text-gray-800 mt-1">{value}</p>
+    
+    <div className="flex items-end gap-3">
+      <p className="text-3xl font-bold text-slate-800 dark:text-white tracking-tight">{value}</p>
     </div>
-  </div>
+    
+    {trend && (
+      <div className="mt-4 flex items-center gap-1.5 text-sm">
+        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md font-medium
+          ${trend === 'up' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'}
+        `}>
+          {trend === 'up' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+          {trendValue}%
+        </div>
+        <span className="text-slate-400 dark:text-slate-500">vs lalu</span>
+      </div>
+    )}
+  </motion.div>
 );
 
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-slate-900 dark:bg-slate-800 text-white text-xs rounded-lg py-2 px-3 shadow-xl border border-slate-700"
+      >
+        <p className="font-semibold mb-1 opacity-80">{label}</p>
+        <p className="font-bold text-sm">Rp {payload[0].value.toLocaleString('id-ID')}</p>
+      </motion.div>
+    );
+  }
+  return null;
+};
+
 const Dashboard = () => {
+  const { 
+    isPresentationMode, 
+    activeOutlet,
+    demoStats,
+    demoTransactions,
+    generateDemoData 
+  } = useContext(WorkspaceContext);
+  
+  const displayTransactions = demoTransactions.length > 0 
+    ? demoTransactions.slice(0, 5) 
+    : [
+        { id: 'INV-102934', user: 'Budi (USR-001)', time: '10:42', amount: 150000, status: 'Sukses', method: 'SmartBank' },
+        { id: 'INV-102933', user: 'Siti (USR-045)', time: '09:15', amount: 45500, status: 'Sukses', method: 'Cash' },
+        { id: 'INV-102932', user: 'Andi (USR-012)', time: 'Kemarin', amount: 210000, status: 'Pending', method: 'Transfer' },
+        { id: 'INV-102931', user: 'Dina (USR-088)', time: 'Kemarin', amount: 75000, status: 'Sukses', method: 'SmartBank' },
+        { id: 'INV-102930', user: 'Rudi (USR-003)', time: 'Kemarin', amount: 320000, status: 'Gagal', method: 'Card' },
+      ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <motion.div 
+      variants={containerVariants}
+      initial="initial"
+      animate="animate"
+      className="space-y-6"
+    >
+      {/* Header Area */}
+      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
-          <p className="text-gray-500 text-sm mt-1">Pantau aktivitas toko dan transaksi hari ini.</p>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Overview: {activeOutlet}</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Pantau performa dan ringkasan transaksi secara realtime.</p>
         </div>
-        <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm">
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-          </span>
-          <span className="text-sm font-medium text-gray-700">SmartBank API Online</span>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={generateDemoData}
+            className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg shadow-sm text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors active:scale-95"
+          >
+            <RefreshCcw size={14} />
+            Generate Data
+          </button>
+          <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Sistem Online</span>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Business Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="lg:col-span-2">
+          <StatCard title="REVENUE HARI INI" value={`Rp ${(demoStats.revenue / 1000000).toFixed(2)}M`} icon={DollarSign} trend="up" trendValue="15.2" colorClass="text-blue-600" bgClass="bg-blue-50" />
+        </div>
+        <div className="lg:col-span-2">
+          <StatCard title="TRANSAKSI" value={demoStats.trxCount} icon={ShoppingCart} trend="up" trendValue="8.2" colorClass="text-emerald-600" bgClass="bg-emerald-50" />
+        </div>
+        <div className="lg:col-span-2">
+          <StatCard title="TOTAL PELANGGAN" value={demoStats.customers} icon={Users} trend="up" trendValue="4.1" colorClass="text-indigo-600" bgClass="bg-indigo-50" />
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Total Pendapatan" 
-          value="Rp 4.520.000" 
-          icon={DollarSign} 
-          trend={12.5}
-          colorClass="text-blue-600"
-          bgClass="bg-blue-50"
-        />
-        <StatCard 
-          title="Total Transaksi" 
-          value="142" 
-          icon={ShoppingCart} 
-          trend={8.2}
-          colorClass="text-emerald-600"
-          bgClass="bg-emerald-50"
-        />
-        <StatCard 
-          title="Fee POS Terkumpul" 
-          value="Rp 45.200" 
-          icon={TrendingUp} 
-          trend={12.5}
-          colorClass="text-purple-600"
-          bgClass="bg-purple-50"
-        />
-        <StatCard 
-          title="Active Gateway" 
-          value="SmartBank" 
-          icon={Building} 
-          colorClass="text-orange-600"
-          bgClass="bg-orange-50"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 gap-6 transition-all duration-500 ${isPresentationMode ? 'lg:grid-cols-1' : 'lg:grid-cols-3'}`}>
         {/* Main Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-gray-800">Grafik Transaksi Harian</h2>
-            <select className="text-sm border-gray-200 rounded-lg text-gray-600 focus:ring-blue-500 focus:border-blue-500">
-              <option>Minggu Ini</option>
+        <motion.div 
+          variants={itemVariants}
+          className={`bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm shadow-slate-200/50 dark:shadow-none transition-all duration-500 ${isPresentationMode ? 'lg:col-span-1 h-[500px]' : 'lg:col-span-2 h-[350px]'}`}
+        >
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-lg font-bold text-slate-800 dark:text-white">Tren Pendapatan</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Akumulasi 7 hari terakhir</p>
+            </div>
+            <select className="text-sm bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-300 font-medium py-1.5 px-3 outline-none">
+              <option>7 Hari Terakhir</option>
               <option>Bulan Ini</option>
             </select>
           </div>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <div className="h-[calc(100%-5rem)] w-full min-h-[250px] relative">
+            <ResponsiveContainer width="99%" height="100%">
+              <AreaChart data={demoStats.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                />
-                <Area type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorTotal)" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" strokeOpacity={0.5} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12, fontWeight: 500}} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} tickFormatter={(value) => `Rp${value/1000}k`} />
+                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                <Area type="monotone" dataKey="total" stroke="#2563eb" strokeWidth={3} fillOpacity={1} fill="url(#colorTotal)" activeDot={{ r: 6, fill: '#2563eb', stroke: '#fff', strokeWidth: 2 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
         {/* Recent Transactions */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
+        <motion.div 
+          variants={itemVariants}
+          className={`bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm shadow-slate-200/50 dark:shadow-none flex flex-col ${isPresentationMode ? 'hidden' : ''}`}
+        >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-gray-800">Transaksi Terakhir</h2>
-            <button className="text-sm text-blue-600 font-medium hover:text-blue-700">Lihat Semua</button>
+            <h2 className="text-lg font-bold text-slate-800 dark:text-white">Aktivitas Terakhir</h2>
+            <button className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg transition-colors">
+              <MoreHorizontal size={20} />
+            </button>
           </div>
+          
           <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-4">
-            {recentTransactions.map((trx, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors border border-transparent hover:border-gray-100">
+            {displayTransactions.map((trx, idx) => (
+              <motion.div 
+                key={idx} 
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.1, duration: 0.3 }}
+                className="group flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-2xl transition-all cursor-default border border-transparent hover:border-slate-100 dark:hover:border-slate-700"
+              >
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center
-                    ${trx.status === 'Sukses' ? 'bg-green-50 text-green-600' : 
-                      trx.status === 'Pending' ? 'bg-yellow-50 text-yellow-600' : 'bg-red-50 text-red-600'}
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border
+                    ${trx.status === 'Sukses' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800' : 
+                      trx.status === 'Pending' ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/20 dark:border-amber-800' : 'bg-red-50 text-red-600 border-red-100 dark:bg-red-900/20 dark:border-red-800'}
                   `}>
                     <Activity size={18} />
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">{trx.id}</p>
-                    <p className="text-xs text-gray-500">{trx.time} • {trx.method}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{trx.user}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{trx.id} • {trx.time || trx.date}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-gray-800">Rp {trx.amount.toLocaleString('id-ID')}</p>
-                  <p className={`text-xs font-medium
-                    ${trx.status === 'Sukses' ? 'text-green-600' : 
-                      trx.status === 'Pending' ? 'text-yellow-600' : 'text-red-600'}
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-bold text-slate-800 dark:text-white">Rp {trx.amount ? trx.amount.toLocaleString('id-ID') : trx.total.toLocaleString('id-ID')}</p>
+                  <p className={`text-[11px] font-semibold uppercase tracking-wider mt-0.5
+                    ${trx.status === 'Sukses' ? 'text-emerald-600 dark:text-emerald-400' : 
+                      trx.status === 'Pending' ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}
                   `}>
                     {trx.status}
                   </p>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
