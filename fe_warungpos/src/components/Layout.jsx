@@ -1,5 +1,5 @@
 import { useState, useContext } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { useOutlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { WorkspaceContext } from '../context/WorkspaceContext';
@@ -38,6 +38,7 @@ const Layout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { isPresentationMode } = useContext(WorkspaceContext);
   const location = useLocation();
+  const outlet = useOutlet();
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex transition-colors duration-300">
@@ -61,7 +62,7 @@ const Layout = () => {
               className="h-full"
             >
               <div className={`mx-auto h-full ${isPresentationMode ? 'max-w-full' : 'max-w-7xl'}`}>
-                <Outlet />
+                {outlet}
               </div>
             </motion.div>
           </AnimatePresence>

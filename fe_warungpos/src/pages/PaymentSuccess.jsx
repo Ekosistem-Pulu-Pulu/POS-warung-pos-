@@ -3,30 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, XCircle, Loader2, Home } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const PaymentRequest = () => {
+const PaymentSuccess = () => {
   const navigate = useNavigate();
-  const [paymentData, setPaymentData] = useState(null);
+  const [paymentData] = useState(() => {
+    const data = localStorage.getItem('paymentPayload');
+    return data ? JSON.parse(data) : null;
+  });
   const [status, setStatus] = useState('processing'); // processing, success, failed
 
   useEffect(() => {
-    const data = localStorage.getItem('paymentPayload');
-    if (data) {
-      setPaymentData(JSON.parse(data));
-      simulatePayment();
-    } else {
+    if (!paymentData) {
       navigate('/transaksi/input');
+      return;
     }
-  }, [navigate]);
 
-  const simulatePayment = () => {
-    setTimeout(() => {
+    if (status !== 'processing') return;
+
+    const timer = setTimeout(() => {
       // 80% chance of success for demo purposes
       const isSuccess = Math.random() > 0.2;
       setStatus(isSuccess ? 'success' : 'failed');
-      
+
       if (isSuccess) {
         localStorage.removeItem('currentTransaction');
-        
+
         // Broadcast paid status to customer display
         const liveCartStr = localStorage.getItem('pos_live_cart');
         if (liveCartStr) {
@@ -39,33 +39,55 @@ const PaymentRequest = () => {
             console.error('Failed to update live cart on success', e);
           }
         }
-        
+
         localStorage.removeItem('paymentPayload');
       }
     }, 3000);
-  };
 
-  if (!paymentData) return null;
+    return () => clearTimeout(timer);
+  }, [navigate, paymentData, status]);
 
+  if (!paymentData) {
+    return (
+      <div className="max-w-xl mx-auto mt-10">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 text-center">
+          <h2 className="text-2xl font-bold">
+            Data pembayaran tidak ditemukan
+          </h2>
+
+          <p className="mt-2 text-slate-500">
+            Silakan kembali ke halaman transaksi.
+          </p>
+
+          <button
+            onClick={() => navigate('/transaksi/input')}
+            className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-xl"
+          >
+            Kembali ke Kasir
+          </button>
+        </div>
+      </div>
+    );
+  }
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       className="max-w-xl mx-auto mt-10 p-4"
     >
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none text-center relative overflow-hidden transition-colors duration-300">
-        
+
         {/* Background Decorative */}
         <div className={`absolute top-0 left-0 w-full h-2 transition-colors duration-500
-          ${status === 'processing' ? 'bg-blue-500 animate-pulse' : 
+          ${status === 'processing' ? 'bg-blue-500 animate-pulse' :
             status === 'success' ? 'bg-emerald-500' : 'bg-red-500'}
         `} />
 
         <div className="mb-6 flex justify-center">
           <AnimatePresence mode="wait">
             {status === 'processing' && (
-              <motion.div 
+              <motion.div
                 key="processing"
                 initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
                 className="relative"
@@ -77,7 +99,7 @@ const PaymentRequest = () => {
               </motion.div>
             )}
             {status === 'success' && (
-              <motion.div 
+              <motion.div
                 key="success"
                 initial={{ scale: 0.5, opacity: 0, rotate: -10 }} animate={{ scale: 1, opacity: 1, rotate: 0 }}
                 transition={{ type: "spring", bounce: 0.5 }}
@@ -87,7 +109,7 @@ const PaymentRequest = () => {
               </motion.div>
             )}
             {status === 'failed' && (
-              <motion.div 
+              <motion.div
                 key="failed"
                 initial={{ scale: 0.5, opacity: 0, x: -10 }} animate={{ scale: 1, opacity: 1, x: 0 }}
                 transition={{ type: "spring", bounce: 0.6 }}
@@ -100,18 +122,18 @@ const PaymentRequest = () => {
         </div>
 
         <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">
-          {status === 'processing' ? 'Memproses Pembayaran...' : 
-           status === 'success' ? 'Pembayaran Berhasil!' : 
-           'Pembayaran Gagal'}
+          {status === 'processing' ? 'Memproses Pembayaran...' :
+            status === 'success' ? 'Pembayaran Berhasil!' :
+              'Pembayaran Gagal'}
         </h2>
-        
+
         <p className="text-slate-500 dark:text-slate-400 mb-8 font-medium">
-          {status === 'processing' ? 'Menunggu konfirmasi dari SmartBank API Gateway.' : 
-           status === 'success' ? 'Transaksi telah berhasil diproses melalui SmartBank.' : 
-           'Terjadi kesalahan saat memproses pembayaran atau saldo tidak cukup.'}
+          {status === 'processing' ? 'Menunggu konfirmasi dari SmartBank API Gateway.' :
+            status === 'success' ? 'Transaksi telah berhasil diproses melalui SmartBank.' :
+              'Terjadi kesalahan saat memproses pembayaran atau saldo tidak cukup.'}
         </p>
 
-        <motion.div 
+        <motion.div
           layout
           className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 text-left mb-8 border border-slate-100 dark:border-slate-800"
         >
@@ -131,18 +153,18 @@ const PaymentRequest = () => {
 
         <div className="flex flex-col sm:flex-row gap-4">
           {status === 'processing' ? (
-             <div className="w-full py-3 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold rounded-xl cursor-not-allowed border border-transparent">
-               Harap Tunggu...
-             </div>
+            <div className="w-full py-3 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold rounded-xl cursor-not-allowed border border-transparent">
+              Harap Tunggu...
+            </div>
           ) : status === 'success' ? (
             <>
-              <button 
+              <button
                 onClick={() => navigate('/transaksi/input')}
                 className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 active:scale-95"
               >
                 Transaksi Baru
               </button>
-              <button 
+              <button
                 onClick={() => navigate('/dashboard')}
                 className="flex-1 py-3 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex justify-center items-center gap-2 active:scale-95"
               >
@@ -152,13 +174,13 @@ const PaymentRequest = () => {
             </>
           ) : (
             <>
-              <button 
-                onClick={() => setStatus('processing') || simulatePayment()}
+              <button
+                onClick={() => setStatus('processing')}
                 className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 active:scale-95"
               >
                 Coba Lagi
               </button>
-              <button 
+              <button
                 onClick={() => navigate('/transaksi/tagihan')}
                 className="flex-1 py-3 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors active:scale-95"
               >
@@ -168,8 +190,9 @@ const PaymentRequest = () => {
           )}
         </div>
       </div>
-      
-      <style dangerouslySetInnerHTML={{__html: `
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
           25% { transform: translateX(-5px); }
@@ -184,4 +207,4 @@ const PaymentRequest = () => {
   );
 };
 
-export default PaymentRequest;
+export default PaymentSuccess;

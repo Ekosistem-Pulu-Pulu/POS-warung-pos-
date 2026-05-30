@@ -56,7 +56,7 @@ const GenerateTagihan = () => {
       // Update shared frontend store (Analytics, Dashboard, Riwayat)
       addTransaction(payload);
       
-      navigate('/transaksi/payment-request');
+      navigate('/transaksi/success');
       
     } catch (error) {
       console.error(error);
@@ -176,7 +176,7 @@ const GenerateTagihan = () => {
               ) : (
                 <>
                   <CreditCard size={20} />
-                  Kirim Payment Request
+                  Proses Pembayaran
                 </>
               )}
             </button>

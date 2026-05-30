@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { WorkspaceProvider } from './context/WorkspaceContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { Toaster } from 'sonner';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
@@ -9,7 +10,7 @@ import InputTransaksi from './pages/InputTransaksi';
 import GenerateTagihan from './pages/GenerateTagihan';
 import RiwayatTransaksi from './pages/RiwayatTransaksi';
 import BiayaLayananPOS from './pages/BiayaLayananPOS';
-import PaymentRequest from './pages/PaymentRequest';
+import PaymentSuccess from './pages/PaymentSuccess';
 import SmartBankStatus from './pages/SmartBankStatus';
 import Analytics from './pages/Analytics';
 import Login from './pages/Login';
@@ -19,8 +20,9 @@ import Subscription from './pages/Subscription';
 
 function App() {
   return (
-    <WorkspaceProvider>
-      <AuthProvider>
+    <ThemeProvider>
+      <WorkspaceProvider>
+        <AuthProvider>
         <Router>
           <Toaster position="top-right" richColors />
           <Routes>
@@ -38,7 +40,7 @@ function App() {
                 <Route path="transaksi/input" element={<InputTransaksi />} />
                 <Route path="transaksi/tagihan" element={<GenerateTagihan />} />
                 <Route path="transaksi/riwayat" element={<RiwayatTransaksi />} />
-                <Route path="transaksi/payment-request" element={<PaymentRequest />} />
+                <Route path="transaksi/success" element={<PaymentSuccess />} />
                 <Route path="biaya-layanan" element={<BiayaLayananPOS />} />
                 <Route path="smartbank-status" element={<SmartBankStatus />} />
                 <Route path="analytics" element={<Analytics />} />
@@ -48,8 +50,9 @@ function App() {
             </Route>
           </Routes>
         </Router>
-      </AuthProvider>
-    </WorkspaceProvider>
+        </AuthProvider>
+      </WorkspaceProvider>
+    </ThemeProvider>
   );
 }
 

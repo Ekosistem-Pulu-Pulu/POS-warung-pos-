@@ -32,7 +32,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { path: '/transaksi/input', name: 'Kasir', icon: ShoppingCart, roles: ['owner', 'kasir'] },
     { path: '/transaksi/tagihan', name: 'Tagihan', icon: Receipt, roles: ['owner', 'kasir'] },
     { path: '/transaksi/riwayat', name: 'Riwayat', icon: History, roles: ['owner', 'kasir'] },
-    { path: '/transaksi/payment-request', name: 'Payment Req', icon: CreditCard, roles: ['owner', 'kasir'] },
     { path: '/biaya-layanan', name: 'Biaya POS', icon: Banknote, roles: ['owner', 'kasir', 'gudang'] },
     { path: '/smartbank-status', name: 'SmartBank', icon: Building, roles: ['owner'] },
     { path: '/analytics', name: 'Analytics', icon: PieChart, roles: ['owner'] },

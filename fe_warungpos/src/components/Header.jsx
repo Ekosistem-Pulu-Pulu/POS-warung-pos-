@@ -3,14 +3,15 @@ import { Bell, Search, Menu, Command, Plus, Moon, Sun, ShoppingCart, Zap, Buildi
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { WorkspaceContext } from '../context/WorkspaceContext';
+import { ThemeContext } from '../context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Header = ({ setIsSidebarOpen }) => {
   const { user } = useContext(AuthContext);
   const location = useLocation();
   const navigate = useNavigate();
+  const { isDarkMode, toggleTheme } = useContext(ThemeContext);
   const { 
-    isDarkMode, toggleDarkMode,
     isDemoMode, toggleDemoMode,
     isPresentationMode, togglePresentationMode,
     activeOutlet, setActiveOutlet,
@@ -256,7 +257,7 @@ const Header = ({ setIsSidebarOpen }) => {
 
         {/* Dark Mode Toggle */}
         <button 
-          onClick={toggleDarkMode}
+          onClick={toggleTheme}
           className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors active:scale-95"
         >
           {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}

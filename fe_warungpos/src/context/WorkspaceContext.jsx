@@ -36,18 +36,6 @@ const generateMockStore = () => {
 };
 
 export const WorkspaceProvider = ({ children }) => {
-  // Theme Mode
-  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark' || false);
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDarkMode]);
-  const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
   // Demo & Presentation Mode
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -211,7 +199,6 @@ export const WorkspaceProvider = ({ children }) => {
 
   return (
     <WorkspaceContext.Provider value={{
-      isDarkMode, toggleDarkMode,
       isDemoMode, toggleDemoMode,
       isPresentationMode, togglePresentationMode,
       activeOutlet, setActiveOutlet,
