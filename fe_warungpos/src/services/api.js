@@ -28,12 +28,25 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Jika backend merespon 401 Unauthorized (misal token expired), 
-    // kita bisa melakukan redirect ke login atau hapus token.
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token');
-      // Uncomment baris di bawah jika ingin otomatis reload ke halaman login
-      // window.location.href = '/login';
+    if (error.response) {
+      const status = error.response.status;
+      const url = window.location.pathname;
+
+      if (status === 401 && url !== '/login') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login?session_expired=true';
+      }
+      
+      // Jika toko di-blokir atau tidak aktif
+      if (status === 403 && error.response.data?.message?.toLowerCase().includes('tidak aktif')) {
+        window.location.href = '/blocked';
+      }
+      
+      // Jika paket tidak cukup (Upgrade Required)
+      if (status === 402 || (status === 403 && error.response.data?.message?.toLowerCase().includes('paket'))) {
+        window.location.href = '/upgrade';
+      }
     }
     return Promise.reject(error);
   }

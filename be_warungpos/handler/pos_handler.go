@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"be_warungpos/middleware"
 	"be_warungpos/model"
 	"be_warungpos/repository"
 	"encoding/json"
@@ -26,7 +27,8 @@ type IdPayload struct {
 }
 
 func GetAllItems(c *fiber.Ctx) error {
-	items, err := repository.GetAllItems()
+	claims := c.Locals("user").(*middleware.JWTClaims)
+	items, err := repository.GetAllItemsByStore(claims.StoreID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(model.Response{
 			Message: "gagal mengambil data produk",
@@ -54,14 +56,18 @@ func PosInput(c *fiber.Ctx) error {
 		})
 	}
 
+	claims := c.Locals("user").(*middleware.JWTClaims)
+
 	trx := model.Transaction{
-		UserID: payload.UserID,
-		Status: "draft",
+		UserID:  payload.UserID, // Keep for backward compatibility or change to KasirID string logic if needed
+		KasirID: claims.ID,
+		StoreID: claims.StoreID,
+		Status:  "draft",
 	}
 
 	var trxItems []model.TransactionItem
 	for _, it := range payload.Items {
-		itemDB, err := repository.GetItemByID(it.ItemID)
+		itemDB, err := repository.GetItemByIDAndStore(it.ItemID, claims.StoreID)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(model.Response{
 				Message: fmt.Sprintf("item dengan id %d tidak ditemukan", it.ItemID),
@@ -102,7 +108,8 @@ func PosGenerate(c *fiber.Ctx) error {
 		})
 	}
 
-	trx, err := repository.GetTransactionByID(payload.TransactionID)
+	claims := c.Locals("user").(*middleware.JWTClaims)
+	trx, err := repository.GetTransactionByIDAndStore(payload.TransactionID, claims.StoreID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.Status(fiber.StatusNotFound).JSON(model.Response{
@@ -158,7 +165,8 @@ func PosPay(c *fiber.Ctx) error {
 		})
 	}
 
-	trx, err := repository.GetTransactionByID(payload.TransactionID)
+	claims := c.Locals("user").(*middleware.JWTClaims)
+	trx, err := repository.GetTransactionByIDAndStore(payload.TransactionID, claims.StoreID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(model.Response{
 			Message: "transaksi tidak ditemukan",
@@ -212,6 +220,11 @@ func PosPay(c *fiber.Ctx) error {
 		})
 	}
 
+	// Deduct stock after payment
+	for _, it := range trx.Items {
+		repository.AdjustStock(claims.StoreID, it.ItemID, it.Qty, "sale", fmt.Sprintf("Sale TRX #%d", trx.ID), claims.ID)
+	}
+
 	trx.Status = "paid"
 	return c.JSON(model.Response{
 		Message: "berhasil melakukan pembayaran melalui SmartBank",
@@ -220,14 +233,9 @@ func PosPay(c *fiber.Ctx) error {
 }
 
 func PosRiwayat(c *fiber.Ctx) error {
-	userID := c.Params("user_id")
-	if userID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(model.Response{
-			Message: "user_id dibutuhkan di URL parameter",
-		})
-	}
+	claims := c.Locals("user").(*middleware.JWTClaims)
 
-	data, err := repository.GetHistoryByUserID(userID)
+	data, err := repository.GetHistory(claims.StoreID, claims.ID, claims.Role)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(model.Response{
 			Message: "gagal mengambil riwayat transaksi",
@@ -251,7 +259,8 @@ func PosBiaya(c *fiber.Ctx) error {
 		})
 	}
 
-	trx, err := repository.GetTransactionByID(trxID)
+	claims := c.Locals("user").(*middleware.JWTClaims)
+	trx, err := repository.GetTransactionByIDAndStore(trxID, claims.StoreID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(model.Response{
 			Message: "transaksi tidak ditemukan",

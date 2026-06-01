@@ -3,10 +3,9 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 const ProtectedRoute = () => {
-  const { isAuthenticated, isLoading } = useContext(AuthContext);
+  const { isAuthenticated, isLoading, user } = useContext(AuthContext);
 
   if (isLoading) {
-    // Bisa diganti dengan spinner/loading animation yang lebih bagus
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -14,9 +13,13 @@ const ProtectedRoute = () => {
     );
   }
 
-  // Jika tidak terautentikasi, lempar kembali ke halaman login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Jika superadmin mencoba akses route tenant biasa, lempar ke admin dashboard
+  if (user?.role === 'superadmin') {
+    return <Navigate to="/admin/dashboard" replace />;
   }
 
   // Jika lolos, render child routes

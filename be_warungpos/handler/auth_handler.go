@@ -66,12 +66,20 @@ func Register(c *fiber.Ctx) error {
 		})
 	}
 
+	// Ambil StoreID dari Owner yang mendaftarkan
+	claims, ok := c.Locals("user").(*middleware.JWTClaims)
+	var storeID int64
+	if ok && claims != nil {
+		storeID = claims.StoreID
+	}
+
 	user := &model.User{
 		Name:            payload.Name,
 		Username:        payload.Username,
 		Email:           payload.Email,
 		Password:        string(hashedPassword),
 		Role:            payload.Role,
+		StoreID:         storeID,
 		SmartBankUserID: payload.SmartBankUserID,
 		IsActive:        true,
 	}
@@ -136,6 +144,23 @@ func Login(c *fiber.Ctx) error {
 		})
 	}
 
+	// Cek apakah akun user ini aktif
+	if !user.IsActive {
+		return c.Status(fiber.StatusUnauthorized).JSON(model.Response{
+			Message: "Akun Anda dinonaktifkan. Hubungi owner Anda.",
+		})
+	}
+
+	// Cek apakah toko aktif
+	if user.Role != "superadmin" && user.StoreID > 0 {
+		store, err := repository.GetStoreByID(user.StoreID)
+		if err == nil && !store.IsActive {
+			return c.Status(fiber.StatusForbidden).JSON(model.Response{
+				Message: "Toko Anda dinonaktifkan oleh admin. Hubungi tim WarungPOS.",
+			})
+		}
+	}
+
 	// Generate JWT token dengan masa berlaku 8 jam
 	secret := os.Getenv("JWT_SECRET")
 	claims := middleware.JWTClaims{
@@ -143,6 +168,7 @@ func Login(c *fiber.Ctx) error {
 		Username:        user.Username,
 		Email:           user.Email,
 		Role:            user.Role,
+		StoreID:         user.StoreID,
 		SmartBankUserID: user.SmartBankUserID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(8 * time.Hour)),
@@ -169,6 +195,7 @@ func Login(c *fiber.Ctx) error {
 				"username": user.Username,
 				"email":    user.Email,
 				"role":     user.Role,
+				"store_id": user.StoreID,
 			},
 		},
 	})

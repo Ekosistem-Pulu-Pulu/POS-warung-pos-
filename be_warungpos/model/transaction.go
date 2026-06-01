@@ -9,7 +9,10 @@ type Transaction struct {
 	FeePOS      float64           `json:"fee_pos"`
 	GrandTotal  float64           `json:"grand_total"`
 	Status      string            `json:"status" gorm:"type:varchar(20);default:'draft'"`
-	Items       []TransactionItem `json:"items" gorm:"foreignKey:TransactionID"`
+	Items        []TransactionItem `json:"items" gorm:"foreignKey:TransactionID"`
+	StoreID      int64             `json:"store_id" gorm:"index"`
+	KasirID      int64             `json:"kasir_id,omitempty"`
+	SmartBankRef string            `json:"smartbank_ref,omitempty" gorm:"type:varchar(100)"`
 	CreatedAt   time.Time         `json:"created_at"`
 	UpdatedAt   time.Time         `json:"updated_at"`
 }

@@ -48,8 +48,43 @@ func SetupRouter(app *fiber.App) {
 
 	// Riwayat Transaksi — owner dan kasir
 	// Catatan: kasir hanya bisa lihat riwayat miliknya sendiri (dikontrol di handler)
-	pos.Get("/riwayat/:user_id", middleware.OwnerOrKasir, handler.PosRiwayat)
+	pos.Get("/riwayat", middleware.OwnerOrKasir, handler.PosRiwayat)
 
 	// Detail Biaya — semua role boleh lihat
 	pos.Get("/biaya/:transaction_id", middleware.AllRoles, handler.PosBiaya)
+
+	// =============================================
+	// STORE & SUBSCRIPTION ROUTES (Owner)
+	// =============================================
+	store := app.Group("/api/store", middleware.AuthMiddleware, middleware.OwnerOnly)
+	store.Get("/me", handler.GetMyStore)
+	store.Put("/me", handler.UpdateMyStore)
+	store.Get("/subscription", handler.GetSubscription)
+	store.Get("/subscription/plans", handler.GetPlans)
+	store.Post("/subscription/upgrade", handler.UpgradeSubscription)
+
+	// =============================================
+	// INVENTORY ROUTES (Owner, Gudang)
+	// =============================================
+	inv := app.Group("/api/inventory", middleware.AuthMiddleware, middleware.GudangOrOwner)
+	inv.Get("/dashboard", handler.InventoryDashboard)
+	inv.Get("/products", handler.InventoryProducts)
+	inv.Post("/products", handler.InventoryCreateProduct)
+	inv.Put("/products/:id", handler.InventoryUpdateProduct)
+	inv.Delete("/products/:id", handler.InventoryDeleteProduct)
+	inv.Post("/restock", handler.InventoryRestock)
+	inv.Post("/adjust", handler.InventoryAdjust)
+	inv.Get("/movements/:item_id", handler.InventoryMovements)
+
+	// =============================================
+	// SUPERADMIN ROUTES
+	// =============================================
+	admin := app.Group("/api/admin", middleware.AuthMiddleware, middleware.SuperadminOnly)
+	admin.Get("/dashboard", handler.AdminDashboard)
+	admin.Get("/stores", handler.AdminGetStores)
+	admin.Post("/stores", handler.AdminCreateStore)
+	admin.Put("/stores/:id/status", handler.AdminToggleStoreStatus)
+	admin.Put("/stores/:id/subscription", handler.AdminChangeSubscription)
+	admin.Get("/users", handler.AdminGetAllUsers)
+	admin.Get("/transactions", handler.AdminGetAllTransactions)
 }

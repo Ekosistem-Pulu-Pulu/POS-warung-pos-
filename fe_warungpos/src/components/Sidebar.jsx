@@ -2,6 +2,7 @@ import { useContext } from 'react';
 import { NavLink } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { WorkspaceContext } from '../context/WorkspaceContext';
+import { SubscriptionContext } from '../context/SubscriptionContext';
 import { 
   LayoutDashboard, 
   ShoppingCart, 
@@ -23,6 +24,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useContext(AuthContext);
   const { isPresentationMode } = useContext(WorkspaceContext);
+  const { isPro } = useContext(SubscriptionContext);
   const role = user?.role || 'kasir';
 
   const isSidebarVisible = isPresentationMode ? isOpen : true;
@@ -32,12 +34,13 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { path: '/transaksi/input', name: 'Kasir', icon: ShoppingCart, roles: ['owner', 'kasir'] },
     { path: '/transaksi/tagihan', name: 'Tagihan', icon: Receipt, roles: ['owner', 'kasir'] },
     { path: '/transaksi/riwayat', name: 'Riwayat', icon: History, roles: ['owner', 'kasir'] },
+    { path: '/inventory', name: 'Gudang Stok', icon: Building, roles: ['owner', 'gudang'], requiresPro: true },
     { path: '/biaya-layanan', name: 'Biaya POS', icon: Banknote, roles: ['owner', 'kasir', 'gudang'] },
-    { path: '/smartbank-status', name: 'SmartBank', icon: Building, roles: ['owner'] },
-    { path: '/analytics', name: 'Analytics', icon: PieChart, roles: ['owner'] },
+    { path: '/smartbank-status', name: 'SmartBank', icon: CreditCard, roles: ['owner'] },
+    { path: '/analytics', name: 'Analytics', icon: PieChart, roles: ['owner'], requiresPro: true },
     { path: '/user-management', name: 'Staf', icon: Users, roles: ['owner'] },
-    { path: '/subscription', name: 'Langganan', icon: Crown, roles: ['owner', 'kasir', 'gudang'] },
-  ].filter(item => item.roles.includes(role));
+    { path: '/subscription', name: 'Langganan', icon: Crown, roles: ['owner'] },
+  ].filter(item => item.roles.includes(role) && (!item.requiresPro || isPro));
 
   return (
     <>

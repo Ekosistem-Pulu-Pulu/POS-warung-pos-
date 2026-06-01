@@ -15,6 +15,7 @@ type JWTClaims struct {
 	Username        string `json:"username"`
 	Email           string `json:"email"`
 	Role            string `json:"role"`
+	StoreID         int64  `json:"store_id"`
 	SmartBankUserID string `json:"smartbank_user_id"`
 	jwt.RegisteredClaims
 }

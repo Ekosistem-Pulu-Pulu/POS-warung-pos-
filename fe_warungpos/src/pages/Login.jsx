@@ -17,11 +17,16 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      await login(identifier, password);
+      const data = await login(identifier, password);
       toast.success('Login berhasil!', {
         description: `Selamat datang di WarungPOS.`
       });
-      navigate('/dashboard', { replace: true });
+      
+      if (data.data.user.role === 'superadmin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     } catch (err) {
       toast.error('Gagal Login', {
         description: err.response?.data?.message || 'Periksa kembali kredensial Anda.'

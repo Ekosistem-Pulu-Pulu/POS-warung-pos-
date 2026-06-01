@@ -10,9 +10,9 @@ func CreateTransaction(trx *model.Transaction) (*model.Transaction, error) {
 	return trx, result.Error
 }
 
-func GetTransactionByID(id int64) (model.Transaction, error) {
+func GetTransactionByIDAndStore(id int64, storeID int64) (model.Transaction, error) {
 	var trx model.Transaction
-	result := config.GetDB().Preload("Items").First(&trx, "id = ?", id)
+	result := config.GetDB().Preload("Items").First(&trx, "id = ? AND store_id = ?", id, storeID)
 	return trx, result.Error
 }
 
@@ -29,8 +29,12 @@ func UpdateTransactionStatusOnly(id int64, status string) error {
 	return config.GetDB().Model(&model.Transaction{}).Where("id = ?", id).Update("status", status).Error
 }
 
-func GetHistoryByUserID(userID string) ([]model.Transaction, error) {
+func GetHistory(storeID int64, kasirID int64, role string) ([]model.Transaction, error) {
 	var data []model.Transaction
-	result := config.GetDB().Preload("Items").Where("user_id = ? AND status != 'draft'", userID).Order("created_at desc").Find(&data)
+	query := config.GetDB().Preload("Items").Where("store_id = ? AND status != 'draft'", storeID)
+	if role == "kasir" {
+		query = query.Where("kasir_id = ?", kasirID)
+	}
+	result := query.Order("created_at desc").Find(&data)
 	return data, result.Error
 }

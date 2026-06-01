@@ -45,5 +45,14 @@ var GudangOnly = RoleMiddleware("gudang")
 // OwnerOrKasir mengizinkan role owner dan kasir
 var OwnerOrKasir = RoleMiddleware("owner", "kasir")
 
+// GudangOrOwner mengizinkan gudang dan owner
+var GudangOrOwner = RoleMiddleware("owner", "gudang")
+
+// SuperadminOnly hanya mengizinkan role superadmin
+var SuperadminOnly = RoleMiddleware("superadmin")
+
+// SuperadminOrOwner mengizinkan superadmin dan owner
+var SuperadminOrOwner = RoleMiddleware("superadmin", "owner")
+
 // AllRoles mengizinkan semua role yang valid
-var AllRoles = RoleMiddleware("owner", "kasir", "gudang")
+var AllRoles = RoleMiddleware("owner", "kasir", "gudang", "superadmin")

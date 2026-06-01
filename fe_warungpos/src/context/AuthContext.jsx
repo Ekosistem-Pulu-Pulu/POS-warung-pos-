@@ -35,9 +35,10 @@ export const AuthProvider = ({ children }) => {
   const login = async (identifier, password) => {
     const res = await api.post('/auth/login', { identifier, password });
     
-    // Simpan token
+    // Simpan token & user
     const token = res.data.data.token;
     localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(res.data.data.user));
     
     // Update state
     setUser(res.data.data.user);
