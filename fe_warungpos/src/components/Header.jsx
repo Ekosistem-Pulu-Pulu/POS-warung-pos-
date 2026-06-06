@@ -4,10 +4,12 @@ import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { WorkspaceContext } from '../context/WorkspaceContext';
 import { ThemeContext } from '../context/ThemeContext';
+import { SubscriptionContext } from '../context/SubscriptionContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Header = ({ setIsSidebarOpen }) => {
   const { user } = useContext(AuthContext);
+  const { plan } = useContext(SubscriptionContext);
   const location = useLocation();
   const navigate = useNavigate();
   const { isDarkMode, toggleTheme } = useContext(ThemeContext);
@@ -224,9 +226,14 @@ const Header = ({ setIsSidebarOpen }) => {
         <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 mx-1 hidden sm:block"></div>
 
         {/* Subscription Badge */}
-        <Link to="/subscription" className="hidden xl:flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800/50 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors group">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
-          <span className="text-xs font-bold text-blue-700 dark:text-blue-400 group-hover:text-blue-800 dark:group-hover:text-blue-300 transition-colors">PRO Plan</span>
+        <Link to="/subscription" className={`hidden xl:flex items-center gap-2 px-2.5 py-1.5 rounded-lg border cursor-pointer transition-colors group
+          ${plan === 'pro' || plan === 'enterprise' 
+            ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/50' 
+            : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+          <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${plan === 'pro' || plan === 'enterprise' ? 'bg-blue-600' : 'bg-slate-500'}`}></span>
+          <span className={`text-xs font-bold transition-colors ${plan === 'pro' || plan === 'enterprise' ? 'text-blue-700 dark:text-blue-400 group-hover:text-blue-800 dark:group-hover:text-blue-300' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-300'}`}>
+            {plan ? plan.toUpperCase() : 'BASIC'} PLAN
+          </span>
         </Link>
 
         {/* Presentation Toggle */}

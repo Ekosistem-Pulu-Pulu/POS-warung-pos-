@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import api from '../services/api';
 import { Users, Plus, ShieldAlert, Key, Check, X, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SubscriptionContext } from '../context/SubscriptionContext';
 
 const UserManagement = () => {
+  const { plan } = useContext(SubscriptionContext);
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -63,6 +65,9 @@ const UserManagement = () => {
 
   if (isLoading && users.length === 0) return <div className="p-8 text-center text-slate-500">Memuat data user...</div>;
 
+  const userLimit = plan === 'pro' ? 5 : plan === 'enterprise' ? 9999 : 1;
+  const isLimitReached = users.length >= userLimit;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -70,15 +75,25 @@ const UserManagement = () => {
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
             <Users className="text-blue-600 dark:text-blue-400" /> Manajemen User
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Kelola akses kasir dan staf operasional.</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Kelola akses kasir dan staf operasional. Kuota terpakai: {users.length}/{userLimit === 9999 ? '∞' : userLimit}</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors font-medium shadow-sm shadow-blue-600/20 active:scale-95 w-full sm:w-auto"
+          disabled={isLimitReached}
+          className={`px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors font-medium shadow-sm w-full sm:w-auto
+            ${isLimitReached 
+              ? 'bg-slate-200 text-slate-500 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500' 
+              : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/20 active:scale-95'}`}
         >
           <Plus size={18} /> Tambah User
         </button>
       </div>
+
+      {isLimitReached && (
+        <div className="bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 p-4 rounded-xl text-sm border border-amber-200 dark:border-amber-800/50 flex items-center gap-2">
+          <ShieldAlert size={18} /> Batas kuota pengguna (staf) telah tercapai untuk paket {plan.toUpperCase()}. Silakan perbarui langganan Anda untuk menambah kuota.
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-4 rounded-xl text-sm border border-red-100 dark:border-red-800/50 flex items-center gap-2">

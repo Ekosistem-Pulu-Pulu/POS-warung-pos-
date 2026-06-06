@@ -3,6 +3,7 @@ package handler
 import (
 	"be_warungpos/model"
 	"be_warungpos/repository"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
@@ -12,20 +13,44 @@ import (
 func AdminDashboard(c *fiber.Ctx) error {
 	stores, _ := repository.GetAllStores()
 	users, _ := repository.GetAllUsersGlobal()
+	transactions, _ := repository.GetAllTransactionsGlobal()
 	
 	activeStores := 0
+	var totalSubscriptionRevenue float64 = 0
 	for _, s := range stores {
 		if s.IsActive {
 			activeStores++
 		}
+		if s.Subscription != nil {
+			if s.Subscription.Plan == "pro" {
+				totalSubscriptionRevenue += 99000
+			} else if s.Subscription.Plan == "basic" {
+				totalSubscriptionRevenue += 49000
+			}
+		}
 	}
+
+	var totalSystemTax float64 = 0
+	var totalGMV float64 = 0
+	for _, t := range transactions {
+		if t.Status == "paid" {
+			totalGMV += t.TotalAmount
+			totalSystemTax += t.TotalAmount * 0.02 // Pajak sistem 2%
+		}
+	}
+
+	totalPlatformRevenue := totalSubscriptionRevenue + totalSystemTax
 
 	return c.JSON(model.Response{
 		Message: "Dashboard stats",
 		Data: fiber.Map{
-			"total_stores":  len(stores),
-			"active_stores": activeStores,
-			"total_users":   len(users),
+			"total_stores":           len(stores),
+			"active_stores":          activeStores,
+			"total_users":            len(users),
+			"total_gmv":              totalGMV,
+			"total_system_tax":       totalSystemTax,
+			"total_platform_revenue": totalPlatformRevenue,
+			"total_transactions":     len(transactions),
 		},
 	})
 }
@@ -75,6 +100,10 @@ func AdminCreateStore(c *fiber.Ctx) error {
 
 	err := repository.CreateStoreWithOwner(store, user, payload.Plan)
 	if err != nil {
+		errStr := strings.ToLower(err.Error())
+		if strings.Contains(errStr, "duplicate") || strings.Contains(errStr, "unique constraint failed") {
+			return c.Status(409).JSON(model.Response{Message: "Username atau email sudah digunakan"})
+		}
 		return c.Status(500).JSON(model.Response{Message: "Gagal membuat toko", Error: err.Error()})
 	}
 
@@ -108,6 +137,15 @@ func AdminChangeSubscription(c *fiber.Ctx) error {
 		return c.Status(500).JSON(model.Response{Message: "Gagal update paket langganan"})
 	}
 	return c.JSON(model.Response{Message: "Paket langganan diupdate"})
+}
+
+func AdminDeleteStore(c *fiber.Ctx) error {
+	id, _ := c.ParamsInt("id")
+	err := repository.DeleteStore(int64(id))
+	if err != nil {
+		return c.Status(500).JSON(model.Response{Message: "Gagal menghapus toko dan datanya"})
+	}
+	return c.JSON(model.Response{Message: "Toko berhasil dihapus permanen"})
 }
 
 func AdminGetAllUsers(c *fiber.Ctx) error {

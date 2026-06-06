@@ -112,6 +112,10 @@ const Login = () => {
                 )}
               </button>
             </div>
+            
+            <p className="text-center text-slate-500 dark:text-slate-400 text-sm font-medium mt-4">
+              Belum punya toko? <a href="/register" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-bold transition-colors">Daftar sekarang</a>
+            </p>
           </form>
         </motion.div>
       </div>

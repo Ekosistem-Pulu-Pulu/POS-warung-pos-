@@ -1,6 +1,9 @@
 import { PieChart as PieChartIcon, ShieldCheck, Banknote } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import api from '../services/api';
+import { toast } from 'sonner';
 
 const containerVariants = {
   initial: {},
@@ -12,15 +15,42 @@ const itemVariants = {
   animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }
 };
 
-const dataBiaya = [
-  { name: 'Fee POS (1%)', value: 450000, color: '#3b82f6' },
-  { name: 'Fee Gateway (0.5%)', value: 225000, color: '#f59e0b' },
-  { name: 'Fee Bank (1%)', value: 450000, color: '#10b981' },
-  { name: 'Pajak Sistem (2%)', value: 900000, color: '#8b5cf6' },
-];
-
 const BiayaLayananPOS = () => {
-  const totalPotongan = dataBiaya.reduce((acc, curr) => acc + curr.value, 0);
+  const [dataAgg, setDataAgg] = useState({
+    total_transaksi: 0,
+    fee_pos: 0,
+    fee_gateway: 0,
+    fee_bank: 0,
+    pajak_sistem: 0,
+    total_potongan: 0,
+    estimasi_bersih: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAggregatedFees = async () => {
+      try {
+        const response = await api.get('/pos/aggregated-fees');
+        if (response.data.data) {
+          setDataAgg(response.data.data);
+        }
+      } catch (err) {
+        toast.error('Gagal memuat data agregasi biaya');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAggregatedFees();
+  }, []);
+
+  const dataBiaya = [
+    { name: 'Fee POS (1%)', value: dataAgg.fee_pos, color: '#3b82f6' },
+    { name: 'Fee Gateway (0.5%)', value: dataAgg.fee_gateway, color: '#f59e0b' },
+    { name: 'Fee Bank (1%)', value: dataAgg.fee_bank, color: '#10b981' },
+    { name: 'Pajak Sistem (2%)', value: dataAgg.pajak_sistem, color: '#8b5cf6' },
+  ];
+
+  if (loading) return <div className="p-8 text-center text-slate-500">Memuat data...</div>;
 
   return (
     <motion.div 
@@ -42,16 +72,16 @@ const BiayaLayananPOS = () => {
           </div>
           <div className="relative z-10">
             <h2 className="text-blue-100 font-bold mb-1 text-sm tracking-wide">TOTAL POTONGAN BULAN INI</h2>
-            <p className="text-4xl font-black mb-6 tracking-tight">Rp {totalPotongan.toLocaleString('id-ID')}</p>
+            <p className="text-4xl font-black mb-6 tracking-tight">Rp {dataAgg.total_potongan.toLocaleString('id-ID')}</p>
             
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm bg-white/10 rounded-xl p-3 backdrop-blur-sm border border-white/10">
                 <span className="flex items-center gap-2 font-medium"><ShieldCheck size={16} /> Total Transaksi</span>
-                <span className="font-bold">Rp 45.000.000</span>
+                <span className="font-bold">Rp {dataAgg.total_transaksi.toLocaleString('id-ID')}</span>
               </div>
               <div className="flex items-center justify-between text-sm bg-white/10 rounded-xl p-3 backdrop-blur-sm border border-white/10">
                 <span className="font-medium">Estimasi Bersih</span>
-                <span className="font-bold">Rp {(45000000 - totalPotongan).toLocaleString('id-ID')}</span>
+                <span className="font-bold">Rp {dataAgg.estimasi_bersih.toLocaleString('id-ID')}</span>
               </div>
             </div>
           </div>

@@ -32,17 +32,17 @@ func CreateUser(user *model.User) (*model.User, error) {
 	return user, result.Error
 }
 
-// UpdateUserActiveStatus mengaktifkan atau menonaktifkan user
-func UpdateUserActiveStatus(id int64, isActive bool) error {
+// UpdateUserActiveStatus mengaktifkan atau menonaktifkan user untuk toko tertentu
+func UpdateUserActiveStatus(id int64, storeID int64, isActive bool) error {
 	return config.GetDB().Model(&model.User{}).
-		Where("id = ?", id).
+		Where("id = ? AND store_id = ?", id, storeID).
 		Update("is_active", isActive).Error
 }
 
-// GetAllUsers mengambil semua data user (kecuali password)
-func GetAllUsers() ([]model.User, error) {
+// GetUsersByStoreID mengambil semua data user untuk suatu toko tertentu
+func GetUsersByStoreID(storeID int64) ([]model.User, error) {
 	var users []model.User
-	// Select semua kolom kecuali password
-	result := config.GetDB().Select("id, name, username, email, role, smartbank_user_id, is_active, created_at").Find(&users)
+	result := config.GetDB().Select("id, name, username, email, role, smartbank_user_id, is_active, created_at").
+		Where("store_id = ?", storeID).Find(&users)
 	return users, result.Error
 }

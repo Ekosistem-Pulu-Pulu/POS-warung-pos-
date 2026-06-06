@@ -8,10 +8,14 @@ const api = axios.create({
   },
 });
 
+// Flag untuk mencegah interceptor membajak saat proses login sedang berjalan
+let isLoginInProgress = false;
+export const setLoginInProgress = (val) => { isLoginInProgress = val; };
+
 // Interceptor untuk menyisipkan token ke setiap request secara otomatis
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -31,21 +35,29 @@ api.interceptors.response.use(
     if (error.response) {
       const status = error.response.status;
       const url = window.location.pathname;
+      const requestUrl = error.config?.url || '';
 
-      if (status === 401 && url !== '/login') {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+      // Jangan redirect jika sedang dalam proses login atau request ke /auth/me
+      const isAuthRequest = requestUrl.includes('/auth/me') || requestUrl.includes('/auth/login');
+      
+      if (status === 401 && url !== '/login' && !isLoginInProgress && !isAuthRequest) {
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
         window.location.href = '/login?session_expired=true';
       }
       
       // Jika toko di-blokir atau tidak aktif
       if (status === 403 && error.response.data?.message?.toLowerCase().includes('tidak aktif')) {
-        window.location.href = '/blocked';
+        if (!isLoginInProgress) {
+          window.location.href = '/blocked';
+        }
       }
       
       // Jika paket tidak cukup (Upgrade Required)
       if (status === 402 || (status === 403 && error.response.data?.message?.toLowerCase().includes('paket'))) {
-        window.location.href = '/upgrade';
+        if (!isLoginInProgress) {
+          window.location.href = '/upgrade';
+        }
       }
     }
     return Promise.reject(error);
@@ -53,3 +65,4 @@ api.interceptors.response.use(
 );
 
 export default api;
+

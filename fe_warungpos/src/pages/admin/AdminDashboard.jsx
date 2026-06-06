@@ -44,7 +44,7 @@ const AdminDashboard = () => {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Stat Card 1 */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-150 transition-transform duration-500 pointer-events-none">
@@ -55,24 +55,24 @@ const AdminDashboard = () => {
               <Store size={28} />
             </div>
             <div>
-              <p className="text-sm text-slate-500 font-medium">Total Warung</p>
-              <h3 className="text-3xl font-black text-slate-800">{stats.total_stores}</h3>
+              <p className="text-sm text-slate-500 font-medium">Total / Aktif Toko</p>
+              <h3 className="text-2xl font-black text-slate-800">{stats.total_stores} / {stats.active_stores}</h3>
             </div>
           </div>
         </div>
 
         {/* Stat Card 2 */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-150 transition-transform duration-500 pointer-events-none">
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 shadow-sm border border-emerald-500 hover:shadow-md transition-shadow relative overflow-hidden group text-white">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-150 transition-transform duration-500 pointer-events-none">
             <CheckCircle size={100} />
           </div>
           <div className="flex items-center space-x-4 relative z-10">
-            <div className="p-3.5 bg-emerald-100 text-emerald-600 rounded-2xl shadow-inner">
-              <CheckCircle size={28} />
+            <div className="p-3.5 bg-white/20 text-white rounded-2xl shadow-inner">
+              <span className="text-xl font-bold">Rp</span>
             </div>
             <div>
-              <p className="text-sm text-slate-500 font-medium">Warung Aktif</p>
-              <h3 className="text-3xl font-black text-slate-800">{stats.active_stores}</h3>
+              <p className="text-sm text-emerald-100 font-medium">Pendapatan Platform</p>
+              <h3 className="text-2xl font-black">Rp {(stats.total_platform_revenue || 0).toLocaleString('id-ID')}</h3>
             </div>
           </div>
         </div>
@@ -83,12 +83,25 @@ const AdminDashboard = () => {
             <Users size={100} />
           </div>
           <div className="flex items-center space-x-4 relative z-10">
-            <div className="p-3.5 bg-blue-100 text-blue-600 rounded-2xl shadow-inner">
-              <Users size={28} />
+            <div className="p-3.5 bg-amber-100 text-amber-600 rounded-2xl shadow-inner">
+              <span className="text-xl font-bold">%</span>
             </div>
             <div>
-              <p className="text-sm text-slate-500 font-medium">Total Pengguna</p>
-              <h3 className="text-3xl font-black text-slate-800">{stats.total_users}</h3>
+              <p className="text-sm text-slate-500 font-medium">Pajak Sistem (2%)</p>
+              <h3 className="text-2xl font-black text-slate-800">Rp {(stats.total_system_tax || 0).toLocaleString('id-ID')}</h3>
+            </div>
+          </div>
+        </div>
+
+        {/* Stat Card 4 */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden group">
+          <div className="flex items-center space-x-4 relative z-10">
+            <div className="p-3.5 bg-blue-100 text-blue-600 rounded-2xl shadow-inner">
+              <span className="text-xl font-bold">📈</span>
+            </div>
+            <div>
+              <p className="text-sm text-slate-500 font-medium">GMV / Transaksi</p>
+              <h3 className="text-lg font-black text-slate-800">Rp {(stats.total_gmv || 0).toLocaleString('id-ID')} <span className="text-sm text-slate-400 font-normal">({stats.total_transactions} Trx)</span></h3>
             </div>
           </div>
         </div>

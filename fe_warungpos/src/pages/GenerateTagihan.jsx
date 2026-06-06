@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Receipt, CheckCircle, ArrowRight, FileText, CreditCard } from 'lucide-react';
 import { WorkspaceContext } from '../context/WorkspaceContext';
-import axios from 'axios';
+import api from '../services/api';
 
 const GenerateTagihan = () => {
   const navigate = useNavigate();
@@ -10,10 +10,10 @@ const GenerateTagihan = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   
-  const { addTransaction } = useContext(WorkspaceContext);
+  const { addTransaction, isDemoMode } = useContext(WorkspaceContext);
 
   useEffect(() => {
-    const data = localStorage.getItem('currentTransaction');
+    const data = sessionStorage.getItem('currentTransaction');
     if (data) {
       setTrxData(JSON.parse(data));
       // Generate a mock invoice number
@@ -38,23 +38,53 @@ const GenerateTagihan = () => {
   const handleKirimPaymentRequest = async () => {
     setIsProcessing(true);
     
-    // Simulate API call to SmartBank Gateway
     try {
-      // In real scenario: await axios.post('/pos/pay', payload)
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (isDemoMode) {
+        // Simulasi jika menggunakan barang demo agar tidak error ke backend
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        sessionStorage.setItem('paymentPayload', JSON.stringify({
+          invoice: invoiceNumber,
+          userId: trxData.userId,
+          items: trxData.items,
+          subtotal,
+          feeGateway,
+          feeBank,
+          feePos,
+          pajakSistem,
+          totalPembayaran,
+          timestamp: new Date().toISOString()
+        }));
+        sessionStorage.removeItem('currentTransaction');
+        localStorage.removeItem('pos_live_cart');
+        navigate('/transaksi/success');
+        return;
+      }
+
+      const inputRes = await api.post('/pos/input', {
+        user_id: trxData.userId,
+        items: trxData.items.map(it => ({ item_id: parseInt(it.itemId) || 1, qty: it.qty }))
+      });
       
-      const payload = {
+      const trxId = inputRes.data.data.id;
+      
+      await api.post('/pos/generate', { transaction_id: trxId });
+      
+      await api.post('/pos/pay', { transaction_id: trxId, payment_method: "SmartBank" });
+      
+      sessionStorage.setItem('paymentPayload', JSON.stringify({
         invoice: invoiceNumber,
-        ...trxData,
+        userId: trxData.userId,
+        items: trxData.items,
+        subtotal,
         feeGateway,
         feeBank,
-        totalPembayaran
-      };
-      
-      localStorage.setItem('paymentPayload', JSON.stringify(payload));
-      
-      // Update shared frontend store (Analytics, Dashboard, Riwayat)
-      addTransaction(payload);
+        feePos,
+        pajakSistem,
+        totalPembayaran,
+        timestamp: new Date().toISOString()
+      }));
+      sessionStorage.removeItem('currentTransaction');
+      localStorage.removeItem('pos_live_cart');
       
       navigate('/transaksi/success');
       

@@ -1,14 +1,15 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Store, LogOut, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { AuthContext } from '../context/AuthContext';
 
 const AdminSidebar = () => {
   const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
   
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    logout();
     navigate('/login');
   };
 

@@ -10,7 +10,7 @@ export const SubscriptionProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchSubscription = async () => {
-    if (!isAuthenticated || !user || user.role === 'superadmin') {
+    if (!isAuthenticated || !user || user.role === 'superadmin' || (user.role !== 'owner')) {
       setLoading(false);
       return;
     }

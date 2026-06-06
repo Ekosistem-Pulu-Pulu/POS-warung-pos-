@@ -1,22 +1,25 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import AdminSidebar from '../../components/AdminSidebar';
+import { AuthContext } from '../../context/AuthContext';
 
 const AdminLayout = () => {
-  const token = localStorage.getItem('token');
-  const userStr = localStorage.getItem('user');
+  const { isAuthenticated, isLoading, user } = useContext(AuthContext);
 
-  if (!token || !userStr) {
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  try {
-    const user = JSON.parse(userStr);
-    if (user.role !== 'superadmin') {
-      return <Navigate to="/dashboard" replace />;
-    }
-  } catch (e) {
-    return <Navigate to="/login" replace />;
+  if (user?.role !== 'superadmin') {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (

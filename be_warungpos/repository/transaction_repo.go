@@ -38,3 +38,18 @@ func GetHistory(storeID int64, kasirID int64, role string) ([]model.Transaction,
 	result := query.Order("created_at desc").Find(&data)
 	return data, result.Error
 }
+
+type AggregatedFees struct {
+	TotalAmount float64 `json:"total_amount"`
+	FeePOS      float64 `json:"fee_pos"`
+}
+
+func GetAggregatedFeesByStore(storeID int64) (AggregatedFees, error) {
+	var agg AggregatedFees
+	// Hitung total_amount dan fee_pos hanya untuk transaksi yang sudah dibayar (paid)
+	result := config.GetDB().Model(&model.Transaction{}).
+		Where("store_id = ? AND status = 'paid'", storeID).
+		Select("COALESCE(SUM(total_amount), 0) as total_amount, COALESCE(SUM(fee_pos), 0) as fee_pos").
+		Scan(&agg)
+	return agg, result.Error
+}

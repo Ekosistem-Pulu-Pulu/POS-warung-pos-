@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   DollarSign, 
   ShoppingCart, 
@@ -18,8 +18,9 @@ import {
   Tooltip, 
   ResponsiveContainer
 } from 'recharts';
-import { WorkspaceContext } from '../context/WorkspaceContext';
 import { motion } from 'framer-motion';
+import api from '../services/api';
+import { toast } from 'sonner';
 
 // --- Framer Motion Variants ---
 const containerVariants = {
@@ -90,23 +91,29 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const Dashboard = () => {
-  const { 
-    isPresentationMode, 
-    activeOutlet,
-    demoStats,
-    demoTransactions,
-    generateDemoData 
-  } = useContext(WorkspaceContext);
-  
-  const displayTransactions = demoTransactions.length > 0 
-    ? demoTransactions.slice(0, 5) 
-    : [
-        { id: 'INV-102934', user: 'Budi (USR-001)', time: '10:42', amount: 150000, status: 'Sukses', method: 'SmartBank' },
-        { id: 'INV-102933', user: 'Siti (USR-045)', time: '09:15', amount: 45500, status: 'Sukses', method: 'Cash' },
-        { id: 'INV-102932', user: 'Andi (USR-012)', time: 'Kemarin', amount: 210000, status: 'Pending', method: 'Transfer' },
-        { id: 'INV-102931', user: 'Dina (USR-088)', time: 'Kemarin', amount: 75000, status: 'Sukses', method: 'SmartBank' },
-        { id: 'INV-102930', user: 'Rudi (USR-003)', time: 'Kemarin', amount: 320000, status: 'Gagal', method: 'Card' },
-      ];
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchDashboard = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/pos/dashboard');
+      if (res.data.data) {
+        setData(res.data.data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboard();
+  }, []);
+
+  if (loading) return <div className="p-8 text-center text-slate-500">Memuat dashboard...</div>;
+  if (!data) return <div className="p-8 text-center text-red-500">Gagal memuat dashboard.</div>;
 
   return (
     <motion.div 
@@ -118,16 +125,16 @@ const Dashboard = () => {
       {/* Header Area */}
       <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Overview: {activeOutlet}</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Pantau performa dan ringkasan transaksi secara realtime.</p>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Overview Dashboard</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Pantau performa dan ringkasan transaksi secara realtime (Live Data).</p>
         </div>
         <div className="flex items-center gap-3">
           <button 
-            onClick={generateDemoData}
+            onClick={fetchDashboard}
             className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg shadow-sm text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors active:scale-95"
           >
             <RefreshCcw size={14} />
-            Generate Data
+            Refresh Data
           </button>
           <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
             <span className="relative flex h-2.5 w-2.5">
@@ -142,21 +149,21 @@ const Dashboard = () => {
       {/* Business Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div className="lg:col-span-2">
-          <StatCard title="REVENUE HARI INI" value={`Rp ${(demoStats.revenue / 1000000).toFixed(2)}M`} icon={DollarSign} trend="up" trendValue="15.2" colorClass="text-blue-600" bgClass="bg-blue-50" />
+          <StatCard title="REVENUE HARI INI" value={`Rp ${data.revenue.toLocaleString('id-ID')}`} icon={DollarSign} colorClass="text-blue-600" bgClass="bg-blue-50" />
         </div>
         <div className="lg:col-span-2">
-          <StatCard title="TRANSAKSI" value={demoStats.trxCount} icon={ShoppingCart} trend="up" trendValue="8.2" colorClass="text-emerald-600" bgClass="bg-emerald-50" />
+          <StatCard title="TRANSAKSI HARI INI" value={data.trxCount} icon={ShoppingCart} colorClass="text-emerald-600" bgClass="bg-emerald-50" />
         </div>
         <div className="lg:col-span-2">
-          <StatCard title="TOTAL PELANGGAN" value={demoStats.customers} icon={Users} trend="up" trendValue="4.1" colorClass="text-indigo-600" bgClass="bg-indigo-50" />
+          <StatCard title="PELANGGAN TRANSAKSI" value={data.customers} icon={Users} colorClass="text-indigo-600" bgClass="bg-indigo-50" />
         </div>
       </div>
 
-      <div className={`grid grid-cols-1 gap-6 transition-all duration-500 ${isPresentationMode ? 'lg:grid-cols-1' : 'lg:grid-cols-3'}`}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 transition-all duration-500">
         {/* Main Chart */}
         <motion.div 
           variants={itemVariants}
-          className={`bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm shadow-slate-200/50 dark:shadow-none transition-all duration-500 ${isPresentationMode ? 'lg:col-span-1 h-[500px]' : 'lg:col-span-2 h-[350px]'}`}
+          className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm shadow-slate-200/50 dark:shadow-none transition-all duration-500 lg:col-span-2 h-[350px]"
         >
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -165,12 +172,11 @@ const Dashboard = () => {
             </div>
             <select className="text-sm bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-300 font-medium py-1.5 px-3 outline-none">
               <option>7 Hari Terakhir</option>
-              <option>Bulan Ini</option>
             </select>
           </div>
           <div className="h-[calc(100%-5rem)] w-full min-h-[250px] relative">
             <ResponsiveContainer width="99%" height="100%">
-              <AreaChart data={demoStats.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={data.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
@@ -190,7 +196,7 @@ const Dashboard = () => {
         {/* Recent Transactions */}
         <motion.div 
           variants={itemVariants}
-          className={`bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm shadow-slate-200/50 dark:shadow-none flex flex-col ${isPresentationMode ? 'hidden' : ''}`}
+          className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm shadow-slate-200/50 dark:shadow-none flex flex-col"
         >
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-slate-800 dark:text-white">Aktivitas Terakhir</h2>
@@ -200,37 +206,41 @@ const Dashboard = () => {
           </div>
           
           <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-4">
-            {displayTransactions.map((trx, idx) => (
-              <motion.div 
-                key={idx} 
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.1, duration: 0.3 }}
-                className="group flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-2xl transition-all cursor-default border border-transparent hover:border-slate-100 dark:hover:border-slate-700"
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border
-                    ${trx.status === 'Sukses' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800' : 
-                      trx.status === 'Pending' ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/20 dark:border-amber-800' : 'bg-red-50 text-red-600 border-red-100 dark:bg-red-900/20 dark:border-red-800'}
-                  `}>
-                    <Activity size={18} />
+            {data.recent && data.recent.length > 0 ? (
+              data.recent.map((trx, idx) => (
+                <motion.div 
+                  key={idx} 
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.1, duration: 0.3 }}
+                  className="group flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-2xl transition-all cursor-default border border-transparent hover:border-slate-100 dark:hover:border-slate-700"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border
+                      ${trx.status === 'Sukses' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800' : 
+                        trx.status === 'Pending' ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/20 dark:border-amber-800' : 'bg-red-50 text-red-600 border-red-100 dark:bg-red-900/20 dark:border-red-800'}
+                    `}>
+                      <Activity size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{trx.user}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{trx.id} • {trx.time || trx.date}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{trx.user}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{trx.id} • {trx.time || trx.date}</p>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-slate-800 dark:text-white">Rp {trx.amount ? trx.amount.toLocaleString('id-ID') : 0}</p>
+                    <p className={`text-[11px] font-semibold uppercase tracking-wider mt-0.5
+                      ${trx.status === 'Sukses' ? 'text-emerald-600 dark:text-emerald-400' : 
+                        trx.status === 'Pending' ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}
+                    `}>
+                      {trx.status}
+                    </p>
                   </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-bold text-slate-800 dark:text-white">Rp {trx.amount ? trx.amount.toLocaleString('id-ID') : trx.total.toLocaleString('id-ID')}</p>
-                  <p className={`text-[11px] font-semibold uppercase tracking-wider mt-0.5
-                    ${trx.status === 'Sukses' ? 'text-emerald-600 dark:text-emerald-400' : 
-                      trx.status === 'Pending' ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}
-                  `}>
-                    {trx.status}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))
+            ) : (
+              <p className="text-sm text-slate-500 text-center mt-10">Belum ada aktivitas transaksi.</p>
+            )}
           </div>
         </motion.div>
       </div>

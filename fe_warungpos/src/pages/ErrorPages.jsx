@@ -16,7 +16,7 @@ export const StoreBlockedPage = () => {
         </p>
         <button 
           onClick={() => {
-            localStorage.clear();
+            sessionStorage.clear(); localStorage.clear();
             navigate('/login');
           }}
           className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 rounded-xl transition-colors"

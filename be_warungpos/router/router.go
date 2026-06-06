@@ -21,6 +21,7 @@ func SetupRouter(app *fiber.App) {
 	// =============================================
 	auth := app.Group("/api/auth")
 	auth.Post("/login", handler.Login)
+	auth.Post("/register-store", handler.RegisterStore)
 	// Register hanya bisa dilakukan oleh owner (butuh token)
 	auth.Post("/register", middleware.AuthMiddleware, middleware.OwnerOnly, handler.Register)
 	// Manajemen User (Hanya Owner)
@@ -52,6 +53,8 @@ func SetupRouter(app *fiber.App) {
 
 	// Detail Biaya — semua role boleh lihat
 	pos.Get("/biaya/:transaction_id", middleware.AllRoles, handler.PosBiaya)
+	pos.Get("/aggregated-fees", middleware.AllRoles, handler.PosAggregatedFees)
+	pos.Get("/dashboard", middleware.OwnerOnly, handler.PosDashboard)
 
 	// =============================================
 	// STORE & SUBSCRIPTION ROUTES (Owner)
@@ -85,6 +88,7 @@ func SetupRouter(app *fiber.App) {
 	admin.Post("/stores", handler.AdminCreateStore)
 	admin.Put("/stores/:id/status", handler.AdminToggleStoreStatus)
 	admin.Put("/stores/:id/subscription", handler.AdminChangeSubscription)
+	admin.Delete("/stores/:id", handler.AdminDeleteStore)
 	admin.Get("/users", handler.AdminGetAllUsers)
 	admin.Get("/transactions", handler.AdminGetAllTransactions)
 }

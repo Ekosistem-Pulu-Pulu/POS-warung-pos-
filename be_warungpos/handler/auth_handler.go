@@ -23,6 +23,60 @@ type registerPayload struct {
 	SmartBankUserID string `json:"smartbank_user_id"`
 }
 
+// RegisterStore mendaftarkan toko baru beserta owner secara mandiri (public)
+// POST /api/auth/register-store
+func RegisterStore(c *fiber.Ctx) error {
+	var payload struct {
+		StoreName string `json:"store_name"`
+		Address   string `json:"address"`
+		Phone     string `json:"phone"`
+		OwnerName string `json:"owner_name"`
+		Email     string `json:"email"`
+		Username  string `json:"username"`
+		Password  string `json:"password"`
+	}
+
+	if err := c.BodyParser(&payload); err != nil {
+		return c.Status(400).JSON(model.Response{Message: "Payload tidak valid"})
+	}
+
+	if payload.StoreName == "" || payload.OwnerName == "" || payload.Email == "" || payload.Username == "" || payload.Password == "" {
+		return c.Status(400).JSON(model.Response{Message: "Semua kolom wajib diisi"})
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(payload.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return c.Status(500).JSON(model.Response{Message: "Gagal memproses password", Error: err.Error()})
+	}
+
+	store := &model.Store{
+		Name:    payload.StoreName,
+		Address: payload.Address,
+		Phone:   payload.Phone,
+	}
+
+	user := &model.User{
+		Name:     payload.OwnerName,
+		Username: payload.Username,
+		Email:    payload.Email,
+		Password: string(hashedPassword),
+		Role:     "owner",
+		IsActive: true,
+	}
+
+	// Default plan is 'basic'
+	err = repository.CreateStoreWithOwner(store, user, "basic")
+	if err != nil {
+		errStr := strings.ToLower(err.Error())
+		if strings.Contains(errStr, "duplicate") || strings.Contains(errStr, "unique constraint failed") {
+			return c.Status(409).JSON(model.Response{Message: "Username atau email sudah digunakan"})
+		}
+		return c.Status(500).JSON(model.Response{Message: "Gagal mendaftar toko", Error: err.Error()})
+	}
+
+	return c.Status(201).JSON(model.Response{Message: "Toko berhasil didaftarkan"})
+}
+
 // loginPayload mendefinisikan body request untuk POST /auth/login
 // Field "identifier" bisa diisi email ATAU username
 type loginPayload struct {
@@ -71,6 +125,27 @@ func Register(c *fiber.Ctx) error {
 	var storeID int64
 	if ok && claims != nil {
 		storeID = claims.StoreID
+	}
+
+	// Validasi Limitasi Langganan
+	if storeID != 0 {
+		sub, err := repository.GetSubscriptionByStoreID(storeID)
+		if err == nil {
+			users, _ := repository.GetUsersByStoreID(storeID)
+			
+			limit := 1 // Basic limit
+			if sub.Plan == "pro" {
+				limit = 5
+			} else if sub.Plan == "enterprise" {
+				limit = 9999
+			}
+			
+			if len(users) >= limit {
+				return c.Status(fiber.StatusForbidden).JSON(model.Response{
+					Message: "Batas kuota pengguna telah tercapai untuk paket " + sub.Plan + ". Silakan upgrade paket Anda.",
+				})
+			}
+		}
 	}
 
 	user := &model.User{
@@ -152,12 +227,17 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	// Cek apakah toko aktif
+	var storeName, storeAddress string
 	if user.Role != "superadmin" && user.StoreID > 0 {
 		store, err := repository.GetStoreByID(user.StoreID)
-		if err == nil && !store.IsActive {
-			return c.Status(fiber.StatusForbidden).JSON(model.Response{
-				Message: "Toko Anda dinonaktifkan oleh admin. Hubungi tim WarungPOS.",
-			})
+		if err == nil {
+			if !store.IsActive {
+				return c.Status(fiber.StatusForbidden).JSON(model.Response{
+					Message: "Toko Anda dinonaktifkan oleh admin. Hubungi tim WarungPOS.",
+				})
+			}
+			storeName = store.Name
+			storeAddress = store.Address
 		}
 	}
 
@@ -190,12 +270,14 @@ func Login(c *fiber.Ctx) error {
 		Data: fiber.Map{
 			"token": signed,
 			"user": fiber.Map{
-				"id":       user.ID,
-				"name":     user.Name,
-				"username": user.Username,
-				"email":    user.Email,
-				"role":     user.Role,
-				"store_id": user.StoreID,
+				"id":            user.ID,
+				"name":          user.Name,
+				"username":      user.Username,
+				"email":         user.Email,
+				"role":          user.Role,
+				"store_id":      user.StoreID,
+				"store_name":    storeName,
+				"store_address": storeAddress,
 			},
 		},
 	})
@@ -218,16 +300,39 @@ func Me(c *fiber.Ctx) error {
 		})
 	}
 
+	var storeName, storeAddress string
+	if user.StoreID > 0 {
+		store, err := repository.GetStoreByID(user.StoreID)
+		if err == nil {
+			storeName = store.Name
+			storeAddress = store.Address
+		}
+	}
+
 	return c.JSON(model.Response{
 		Message: "berhasil mengambil profil",
-		Data:    user,
+		Data: fiber.Map{
+			"id":            user.ID,
+			"name":          user.Name,
+			"username":      user.Username,
+			"email":         user.Email,
+			"role":          user.Role,
+			"store_id":      user.StoreID,
+			"store_name":    storeName,
+			"store_address": storeAddress,
+		},
 	})
 }
 
-// GetAllUsers mengembalikan daftar semua user (Hanya Owner)
+// GetAllUsers mengembalikan daftar semua user (Hanya Owner) untuk tokonya saja
 // GET /api/auth/users
 func GetAllUsers(c *fiber.Ctx) error {
-	users, err := repository.GetAllUsers()
+	claims, ok := c.Locals("user").(*middleware.JWTClaims)
+	if !ok || claims == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(model.Response{Message: "Unauthorized"})
+	}
+
+	users, err := repository.GetUsersByStoreID(claims.StoreID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(model.Response{
 			Message: "gagal mengambil data user",
@@ -260,7 +365,12 @@ func UpdateUserStatus(c *fiber.Ctx) error {
 		})
 	}
 
-	err = repository.UpdateUserActiveStatus(int64(id), payload.IsActive)
+	claims, ok := c.Locals("user").(*middleware.JWTClaims)
+	if !ok || claims == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(model.Response{Message: "Unauthorized"})
+	}
+
+	err = repository.UpdateUserActiveStatus(int64(id), claims.StoreID, payload.IsActive)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(model.Response{
 			Message: "gagal mengubah status user",

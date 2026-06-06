@@ -90,7 +90,7 @@ const InputTransaksi = () => {
           const transactionData = {
             userId, items, subtotal, feePos, pajakSistem, totalAkhir, timestamp: new Date().toISOString()
           };
-          localStorage.setItem('currentTransaction', JSON.stringify(transactionData));
+          sessionStorage.setItem('currentTransaction', JSON.stringify(transactionData));
           
           const liveCart = {
             status: 'generated', userId, timestamp: new Date().toISOString(), items, subtotal, feePos, pajakSistem, totalAkhir

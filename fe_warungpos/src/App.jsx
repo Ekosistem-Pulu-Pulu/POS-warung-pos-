@@ -15,6 +15,7 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import SmartBankStatus from './pages/SmartBankStatus';
 import Analytics from './pages/Analytics';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import UserManagement from './pages/UserManagement';
 import CustomerDisplay from './pages/CustomerDisplay';
 import Subscription from './pages/Subscription';
@@ -36,10 +37,11 @@ function App() {
             <Toaster position="top-right" richColors />
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/customer" element={<CustomerDisplay />} />
               
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
-                <Route path="/customer" element={<CustomerDisplay />} />
                 
                 <Route path="/" element={<Layout />}>
                   <Route index element={<Navigate to="/dashboard" replace />} />

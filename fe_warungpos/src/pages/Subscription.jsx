@@ -1,6 +1,9 @@
+import { useContext, useState } from 'react';
 import { Check, Zap, Building2, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { SubscriptionContext } from '../context/SubscriptionContext';
+import api from '../services/api';
 
 const containerVariants = {
   initial: {},
@@ -12,8 +15,9 @@ const itemVariants = {
   animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }
 };
 
-const plans = [
+const basePlans = [
   {
+    id: 'basic',
     name: "BASIC",
     price: "49.000",
     description: "Sempurna untuk UMKM yang baru mulai.",
@@ -25,11 +29,10 @@ const plans = [
       "Riwayat Transaksi",
       "Laporan Dasar",
       "Support Email"
-    ],
-    buttonText: "Pakai Basic",
-    current: false
+    ]
   },
   {
+    id: 'pro',
     name: "PRO",
     price: "149.000",
     description: "Untuk warung yang ingin berkembang pesat.",
@@ -42,11 +45,10 @@ const plans = [
       "Multi User (5 Akun)",
       "Export Data (CSV/PDF)",
       "Customer Display"
-    ],
-    buttonText: "Plan Saat Ini",
-    current: true
+    ]
   },
   {
+    id: 'enterprise',
     name: "ENTERPRISE",
     price: "499.000",
     description: "Solusi lengkap untuk banyak cabang.",
@@ -59,17 +61,38 @@ const plans = [
       "API Integration",
       "Priority Support 24/7",
       "White Label System"
-    ],
-    buttonText: "Hubungi Sales",
-    current: false
+    ]
   }
 ];
 
 const Subscription = () => {
-  const handleUpgrade = (planName) => {
-    toast.success(`Berhasil mengajukan upgrade ke paket ${planName}!`, {
-      description: 'Tim kami akan segera memproses langganan Anda.'
-    });
+  const { plan, fetchSubscription } = useContext(SubscriptionContext);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const plans = basePlans.map(p => ({
+    ...p,
+    current: p.id === plan,
+    buttonText: p.id === plan ? "Plan Saat Ini" : `Pakai ${p.name}`
+  }));
+
+  const handleUpgrade = async (planName) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    const toastId = toast.loading('Menghubungkan ke SmartBank untuk simulasi pembayaran...');
+    
+    try {
+      await api.post('/store/subscription/upgrade', { plan: planName.toLowerCase() });
+      await fetchSubscription(); // Refresh context to trigger UI updates globally
+      toast.dismiss(toastId);
+      toast.success(`Selamat! Berhasil upgrade ke paket ${planName}.`, {
+        description: 'Pembayaran simulasi via SmartBank lunas. Fitur telah aktif.'
+      });
+    } catch (err) {
+      toast.dismiss(toastId);
+      toast.error('Gagal memproses pembayaran langganan');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (

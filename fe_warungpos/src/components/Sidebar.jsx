@@ -34,7 +34,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { path: '/transaksi/input', name: 'Kasir', icon: ShoppingCart, roles: ['owner', 'kasir'] },
     { path: '/transaksi/tagihan', name: 'Tagihan', icon: Receipt, roles: ['owner', 'kasir'] },
     { path: '/transaksi/riwayat', name: 'Riwayat', icon: History, roles: ['owner', 'kasir'] },
-    { path: '/inventory', name: 'Gudang Stok', icon: Building, roles: ['owner', 'gudang'], requiresPro: true },
+    { path: '/inventory', name: 'Gudang Stok', icon: Building, roles: ['owner', 'gudang'] },
     { path: '/biaya-layanan', name: 'Biaya POS', icon: Banknote, roles: ['owner', 'kasir', 'gudang'] },
     { path: '/smartbank-status', name: 'SmartBank', icon: CreditCard, roles: ['owner'] },
     { path: '/analytics', name: 'Analytics', icon: PieChart, roles: ['owner'], requiresPro: true },
@@ -132,7 +132,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           </ul>
 
           {/* Quick Action */}
-          {['owner', 'kasir'].includes(role) && (
+          {['owner', 'kasir'].includes(role) && isPro && (
             <div className="mt-8 px-3">
               <a 
                 href="/customer" 
