@@ -588,7 +588,7 @@ Login menggunakan akun default yang di-seed otomatis:
 
 ## 👥 Tim Pengembang
 
-Proyek ini dikembangkan sebagai tugas akademik dalam mata kuliah Pengembangan Perangkat Lunak oleh **Ekosistem Pulu-Pulu**.
+Proyek ini dikembangkan sebagai tugas akademik dalam mata kuliah Rekayasa Perangkat Lunak oleh **Ekosistem Pulu-Pulu**.
 
 ---
 
